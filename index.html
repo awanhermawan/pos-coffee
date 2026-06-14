@@ -67,7 +67,7 @@
       font-family: 'Roboto', 'Inter', sans-serif;
     }
     
-    .keep-inter, .keep-inter * {
+    .keep-inter, .keep-inter *:not(.material-icons-round) {
       font-family: 'Inter', sans-serif !important;
     }
     
@@ -115,7 +115,7 @@
     <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 flex flex-col items-center max-w-xs w-full shadow-2xl text-center anim-pop-in">
       <div class="w-12 h-12 rounded-full border-4 border-amber-200 dark:border-zinc-800 border-t-coffee-600 dark:border-t-coffee-500 animate-spin mb-4"></div>
       <p class="text-sm font-bold text-zinc-800 dark:text-zinc-200" id="loadingMsg">Membaca data database...</p>
-      <p class="text-[10px] text-zinc-400 mt-1 dark:text-zinc-500">Google Apps Script API</p>
+      <p class="text-[10px] text-zinc-400 mt-1 dark:text-zinc-500">Loading database</p>
     </div>
   </div>
 
@@ -298,12 +298,12 @@
 
       <div>
         <label class="text-[10px] uppercase font-extrabold tracking-wider text-zinc-400 mb-1.5 block">Catatan Tambahan (opsional)</label>
-        <input type="text" id="orderNote" placeholder="Contoh: Meja 5 / Pesanan atas nama siapa?" class="w-full bg-white dark:bg-zinc-800 text-xs border border-zinc-200 dark:border-zinc-700 p-3 rounded-xl focus:outline-none focus:ring-1 focus:ring-coffee-500 text-zinc-800 dark:text-zinc-100">
+        <input type="text" id="orderNote" placeholder="Pesanan atas nama siapa?" class="w-full bg-white dark:bg-zinc-800 text-xs border border-zinc-200 dark:border-zinc-700 p-3 rounded-xl focus:outline-none focus:ring-1 focus:ring-coffee-500 text-zinc-800 dark:text-zinc-100">
       </div>
 
       <button onclick="submitOrder()" class="w-full py-4 text-sm font-black text-white bg-coffee-600 hover:bg-coffee-700 active:scale-[0.98] rounded-xl flex items-center justify-center gap-2 transition-all shadow-md">
         <span class="material-icons-round text-lg">check</span>
-        Simpan Order Ke Spreadsheet
+        Simpan Order
       </button>
 
       <button onclick="clearCart()" class="w-full py-2.5 text-xs text-rose-500 dark:text-rose-400 font-bold hover:bg-rose-50 dark:hover:bg-rose-950/20 border border-dotted border-rose-200 dark:border-rose-950/40 rounded-xl flex items-center justify-center gap-1.5 transition-all">
@@ -327,8 +327,8 @@
     <!-- Hero Header Brand as an Eye-Catching Banner -->
     <div id="heroBanner" class="keep-inter relative overflow-hidden mx-4 mt-4 mb-2 rounded-2xl h-32 bg-zinc-900 shadow-md group border border-zinc-200/10 dark:border-zinc-800/50">
       <!-- Background Image with Overlay -->
-      <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=800&auto=format&fit=crop" 
-           alt="Kopi Nusantara Banner" 
+      <img src="https://lh3.googleusercontent.com/d/1KEcw2VIR84PDOF14vZfk4CqMaH8T0oap" 
+           alt="Point Of Sale" 
            referrerpolicy="no-referrer"
            class="absolute inset-0 w-full h-full object-cover object-center transform scale-105 group-hover:scale-100 transition-transform duration-700 opacity-65 dark:opacity-45">
       
@@ -338,29 +338,31 @@
       <!-- Banner Content Container -->
       <div class="absolute inset-0 p-4 flex flex-col justify-between z-10 text-white">
         <!-- Banner Top Row: Small Badge & Theme Toggle -->
-        <div class="flex justify-between items-center">
-          <div class="inline-flex items-center gap-1 bg-white/10 dark:bg-zinc-900/40 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest text-[#e4c59e]">
-            <span class="w-1 h-1 rounded-full bg-amber-400 animate-pulse"></span>
-            Kopi Nusantara POS
+        <div class="flex justify-between items-start">
+          <div class="inline-flex items-center gap-1.5 bg-emerald-500/20 border border-emerald-500/30 dark:bg-zinc-900/45 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest text-emerald-400">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            CONNECTED
           </div>
           
-          <!-- Compact floating theme toggle -->
-          <button onclick="toggleTheme()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 active:scale-90 dark:bg-zinc-950/40 dark:hover:bg-zinc-800/60 backdrop-blur-md flex items-center justify-center transition-all border border-white/10 dark:border-zinc-800/40 text-white" title="Beralih Tema">
-            <span class="material-icons-round text-sm cursor-pointer" id="themeIcon">light_mode</span>
-          </button>
+          <!-- Compact floating theme toggle and Greeting under it -->
+          <div class="flex flex-col items-end gap-1.5 text-right shrink-0">
+            <button onclick="toggleTheme()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 active:scale-90 dark:bg-zinc-950/40 dark:hover:bg-zinc-800/60 backdrop-blur-md flex items-center justify-center transition-all border border-white/10 dark:border-zinc-800/40 text-white" title="Beralih Tema">
+              <span class="material-icons-round text-sm cursor-pointer" id="themeIcon">light_mode</span>
+            </button>
+            <span class="text-[15px] sm:text-[9.5px] font-black uppercase tracking-widest bg-amber-500/25 border border-amber-500/35 text-amber-300 px-2 py-0.5 rounded-md whitespace-normal text-right max-w-[90px] break-words" id="bannerGreeting">
+              Good Morning
+            </span>
+          </div>
         </div>
 
         <!-- Banner Bottom Row: Branding Title & Date -->
         <div class="space-y-0.5">
           <div class="flex items-center gap-1">
             <h1 class="font-extrabold text-md sm:text-lg tracking-tight leading-none text-white drop-shadow-sm">
-              Pos Kopi Nusantara
+              Point Of Sale
             </h1>
-            <span class="text-xs">☕</span>
+            <span class="text-m"></span>
           </div>
-          <p class="text-[8.5px] text-zinc-300 dark:text-zinc-400 font-bold uppercase tracking-wider leading-none">
-            Spreadsheet Database Engine
-          </p>
           
           <!-- Elegant minimal date row -->
           <div class="flex items-center gap-1 text-[9px] text-amber-200/90 dark:text-amber-300/80 font-semibold pt-0.5">
@@ -380,7 +382,7 @@
       <div>
         <div class="flex items-center gap-1.5 text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-3.5">
           <span class="material-icons-round text-sm text-coffee-600 leading-none">restaurant_menu</span>
-          Pilihan Menu Kopi
+           Menu Santai
         </div>
 
         <div class="grid grid-cols-2 gap-2.5" id="menuGrid"></div>
@@ -390,18 +392,18 @@
       <div class="bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/80 dark:border-zinc-800 p-5 rounded-3xl">
         <div class="flex items-center gap-1.5 text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-4">
           <span class="material-icons-round text-sm text-coffee-600 leading-none">auto_awesome</span>
-          Custom Item Tambahan
+          Custom Order
         </div>
 
         <div class="flex gap-2.5 items-end">
           <div class="flex-1 min-w-0 space-y-3">
             <div>
               <label class="text-[9px] uppercase font-bold tracking-wider text-zinc-400 block mb-1">Nama Minuman / Makanan</label>
-              <input type="text" id="customName" placeholder="Contoh: Kopi Tubruk, Bakwan" class="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 p-2.5 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-coffee-500">
+              <input type="text" id="customName" placeholder="produk yang tidak ada di menu" class="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 p-2.5 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-coffee-500">
             </div>
             <div>
               <label class="text-[9px] uppercase font-bold tracking-wider text-zinc-400 block mb-1">Harga Satuan (Rp)</label>
-              <input type="text" id="customPrice" inputmode="numeric" placeholder="Contoh: 15.000" class="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 p-2.5 rounded-xl text-xs font-mono font-bold focus:outline-none focus:ring-1 focus:ring-coffee-500" oninput="formatCustomPriceInput(this)">
+              <input type="text" id="customPrice" inputmode="numeric" placeholder="0" class="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 p-2.5 rounded-xl text-xs font-mono font-bold focus:outline-none focus:ring-1 focus:ring-coffee-500" oninput="formatCustomPriceInput(this)">
             </div>
           </div>
 
@@ -417,10 +419,10 @@
     <!-- PRIMARY PAGE-VIEW: HISTORY/RIWAYAT LIST SHEET -->
     <!-- ========================================== -->
     <div class="flex-1 hidden" id="pageHistory">
-      <!-- Header Back Navbar -->
-      <div class="px-5 py-3 border-b border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-90 w-full sticky top-0 z-50 flex items-center justify-between shadow-xs">
-        <button onclick="showPage('order')" class="flex items-center gap-1.5 text-zinc-850 dark:text-zinc-200 hover:text-coffee-600 dark:hover:text-coffee-400 font-extrabold text-sm transition-all cursor-pointer select-none">
-          &lt; Back to Ambil Order
+      <!-- Header Back Navbar Minimal -->
+      <div id="backToOrderBanner" class="keep-inter mx-4 mt-4 mb-2 flex items-center justify-between bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800 p-3 rounded-2xl shadow-sm">
+        <button onclick="showPage('order')" class="flex items-center gap-2 text-zinc-700 dark:text-zinc-300 hover:text-amber-700 dark:hover:text-amber-400 font-extrabold text-xs transition-colors cursor-pointer select-none">
+          <span class="material-icons-round text-base leading-none">arrow_back</span> BACK TO HOME
         </button>
       </div>
 
@@ -429,13 +431,13 @@
       <!-- Range selects preset tools -->
       <div>
         <div class="flex items-center justify-between mb-3.5 flex-wrap gap-2">
-          <span class="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 leading-none">
+          <span class="text-[13px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 leading-none">
             <span class="material-icons-round text-sm text-coffee-600 leading-none">history</span>
             Filter Rentang Transaksi
           </span>
           <button onclick="refreshHistory()" class="text-[11px] text-coffee-600 dark:text-coffee-400 hover:underline font-bold flex items-center gap-1">
             <span class="material-icons-round text-xs animate-spin-hover">sync</span>
-            Sinkron Sheets
+            Refresh
           </button>
         </div>
 
@@ -462,49 +464,52 @@
       </div>
 
       <!-- PERFORMANCE STATISTICAL REAL-TIME CARDS -->
-      <div class="bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/40 dark:border-zinc-800 rounded-2xl p-4.5">
-        <p class="text-[9px] uppercase font-extrabold tracking-widest text-zinc-400 dark:text-zinc-500 mb-3 block">Dashboard Ringkasan Angka</p>
+      <div class="bg-gradient-to-br from-amber-50/50 to-zinc-100/50 dark:from-zinc-900/30 dark:to-zinc-950/20 border border-amber-500/10 dark:border-zinc-800 rounded-3xl p-5 shadow-sm">
+        <div class="flex items-center gap-1.5 mb-3.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+          <p class="text-[11px] uppercase font-black tracking-wider text-zinc-500 dark:text-zinc-400">Dashboard</p>
+        </div>
 
         <div class="grid grid-cols-2 gap-3 mb-3">
-          <div class="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-xl p-3 text-center">
-            <span class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase block mb-1">Debit/QRIS</span>
-            <span class="text-xs font-black text-blue-600 dark:text-blue-400" id="stQris">Rp 0</span>
+          <div class="bg-white dark:bg-zinc-905 border border-zinc-200/60 dark:border-zinc-800 rounded-2xl p-4 text-center transition-all hover:shadow-xs">
+            <span class="text-[11px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase block mb-1.5">QRIS</span>
+            <span class="text-base sm:text-lg font-black text-blue-600 dark:text-blue-400 block tracking-tight" id="stQris">Rp 0</span>
           </div>
-          <div class="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-xl p-3 text-center">
-            <span class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase block mb-1">Uang Tunai Cash</span>
-            <span class="text-xs font-black text-emerald-600 dark:text-emerald-400" id="stCash">Rp 0</span>
+          <div class="bg-white dark:bg-zinc-905 border border-zinc-200/60 dark:border-zinc-800 rounded-2xl p-4 text-center transition-all hover:shadow-xs">
+            <span class="text-[11px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase block mb-1.5">Cash</span>
+            <span class="text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400 block tracking-tight" id="stCash">Rp 0</span>
           </div>
         </div>
 
         <div class="grid grid-cols-2 gap-3 mb-3">
-          <div class="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-xl p-3 text-center flex flex-col justify-center">
-            <span class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase block mb-1">Volume Transaksi</span>
-            <span class="text-md font-black text-zinc-800 dark:text-white" id="stCount">0</span>
+          <div class="bg-white dark:bg-zinc-905 border border-zinc-200/60 dark:border-zinc-800 rounded-2xl p-4 text-center flex flex-col justify-center items-center transition-all hover:shadow-xs">
+            <span class="text-[11px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase block mb-1.5">Jumlah Transaksi</span>
+            <span class="text-lg sm:text-xl font-black text-amber-700 dark:text-amber-400 block" id="stCount">0</span>
           </div>
-          <div class="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-xl p-3 text-center flex flex-col justify-center">
-            <span class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase block mb-1 text-center font-bold">⭐ Best Seller</span>
-            <span class="text-[11px] font-black text-coffee-600 dark:text-coffee-400 block truncate" id="stBestName">-</span>
-            <span class="text-[9px] text-zinc-400 block leading-none mt-0.5" id="stBestQty">0 terjual</span>
+          <div class="bg-white dark:bg-zinc-905 border border-zinc-200/60 dark:border-zinc-800 rounded-2xl p-4 text-center flex flex-col justify-center items-center transition-all hover:shadow-xs">
+            <span class="text-[11px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase block mb-1.5 text-center">⭐ Best Seller</span>
+            <span class="text-xs sm:text-sm font-black text-coffee-700 dark:text-coffee-400 block truncate max-w-full leading-tight" id="stBestName">-</span>
+            <span class="text-[10px] text-zinc-400 font-extrabold block mt-1" id="stBestQty">0 terjual</span>
           </div>
         </div>
 
-        <div class="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-xl p-4 text-center">
-          <span class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase block mb-1">Total Omset Pendapatan</span>
-          <span class="text-xl font-black text-emerald-600 dark:text-emerald-400" id="stRevenue">Rp 0</span>
+        <div class="bg-white dark:bg-zinc-905 border border-zinc-200/60 dark:border-zinc-800 rounded-2xl p-4.5 text-center transition-all hover:shadow-xs">
+          <span class="text-xs font-extrabold text-zinc-500 dark:text-zinc-400 uppercase block mb-1.5">Total Omset Pendapatan</span>
+          <span class="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 block tracking-tight" id="stRevenue">Rp 0</span>
         </div>
       </div>
 
       <!-- ORDER CARDS DATA AND LAZY LOADING TRIGGER -->
       <div>
-        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-4 border-b border-zinc-150 dark:border-zinc-800 pb-3">
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-4 border-b border-zinc-150 dark:border-zinc-805 pb-3">
           <div class="flex items-center gap-1.5" id="statusFilterWrap">
-            <button onclick="filterStatus('all')" class="status-tab px-3 py-1.5 text-[9.5px] font-black rounded-lg uppercase tracking-wider bg-coffee-100 text-coffee-800 dark:bg-zinc-800 dark:text-zinc-200 transition-all" data-tab="all">Semua</button>
-            <button onclick="filterStatus('Lunas')" class="status-tab px-3 py-1.5 text-[9.5px] font-black rounded-lg uppercase tracking-wider text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 transition-all" data-tab="Lunas">Lunas</button>
-            <button onclick="filterStatus('Belum Bayar')" class="status-tab px-3 py-1.5 text-[9.5px] font-black rounded-lg uppercase tracking-wider text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 transition-all" data-tab="Belum Bayar">Belum Bayar</button>
+            <button onclick="filterStatus('all')" class="status-tab px-3 py-1.5 text-[9.5px] font-black rounded-lg uppercase tracking-wider transition-all border border-amber-500 bg-amber-100 text-amber-900 dark:bg-zinc-800 dark:border-zinc-700 dark:text-amber-200 shadow-xs" data-tab="all">Semua</button>
+            <button onclick="filterStatus('Lunas')" class="status-tab px-3 py-1.5 text-[9.5px] font-black rounded-lg uppercase tracking-wider transition-all border border-emerald-500/25 bg-emerald-500/5 text-emerald-600 dark:text-emerald-450 hover:bg-emerald-500/10" data-tab="Lunas">Lunas</button>
+            <button onclick="filterStatus('Belum Bayar')" class="status-tab px-3 py-1.5 text-[9.5px] font-black rounded-lg uppercase tracking-wider transition-all border border-rose-500/25 bg-rose-500/5 text-rose-600 dark:text-rose-450 hover:bg-rose-500/10" data-tab="Belum Bayar">Belum Bayar</button>
           </div>
 
           <div class="text-[10px] text-zinc-400 dark:text-zinc-500 font-bold uppercase tracking-wider">
-            Total Sesuai Filter: <span class="text-coffee-600 dark:text-coffee-400" id="statusTotalValue">0</span>
+            Total Sesuai Filter: <span class="text-coffee-600 dark:text-coffee-400 font-extrabold" id="statusTotalValue">0</span>
           </div>
         </div>
 
@@ -520,7 +525,7 @@
 
         <!-- Lazy loading bottom triggers -->
         <div class="text-center py-5 hidden" id="loadMoreWrap">
-          <button onclick="fetchOrders(false)" class="px-5 py-2.5 border border-zinc-250 dark:border-zinc-750 font-bold text-xs rounded-xl inline-flex items-center gap-1.5 bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 shadow-xs transition-colors dark:text-zinc-300 active:scale-95">
+          <button onclick="loadMoreHistoryLocal()" class="px-5 py-2.5 border border-zinc-250 dark:border-zinc-750 font-bold text-xs rounded-xl inline-flex items-center gap-1.5 bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 shadow-xs transition-colors dark:text-zinc-300 active:scale-95">
             <span class="material-icons-round text-sm">expand_more</span>
             Tampilkan Lebih Banyak (Lazy Page)
           </button>
@@ -532,21 +537,21 @@
 
     <!-- Bottom Navigation Bar Fixed Footer -->
     <nav class="fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto z-[210] bg-white/95 dark:bg-zinc-900/95 border-t border-zinc-150 dark:border-zinc-800 backdrop-blur-md flex h-16 justify-around items-center transition-all">
-      <!-- License Trademark brand badge -->
-      <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 pointer-events-none">
-        <span class="bg-zinc-100 dark:bg-zinc-800 text-[8px] font-extrabold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 border border-zinc-200 dark:border-zinc-750 px-2 py-0.5 rounded-full select-none">
-          founderbycloud
+      <!-- License Trademark brand badge centered and italic word mark -->
+      <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0">
+        <span class="font-serif italic text-[9px] tracking-wider text-zinc-400 dark:text-zinc-500 select-none">
+          founder by cloud
         </span>
       </div>
 
-      <button id="navOrderBtn" onclick="showPage('order')" class="nav-btn flex-1 flex flex-col items-center justify-center text-coffee-600 dark:text-coffee-400 gap-0.5">
+      <button id="navOrderBtn" onclick="showPage('order')" class="nav-btn flex-1 flex flex-col items-center justify-center text-coffee-600 dark:text-coffee-400 gap-0.5 z-10">
         <span class="material-icons-round text-lg leading-none">add_shopping_cart</span>
-        <span class="text-[10px] font-extrabold tracking-wide">Ambil Order</span>
+        <span class="text-[10px] font-extrabold tracking-wide">HOME</span>
       </button>
 
-      <button id="navHistoryBtn" onclick="showPage('history')" class="nav-btn flex-1 flex flex-col items-center justify-center text-zinc-400 hover:text-zinc-650 dark:hover:text-zinc-200 gap-0.5">
+      <button id="navHistoryBtn" onclick="showPage('history')" class="nav-btn flex-1 flex flex-col items-center justify-center text-zinc-400 hover:text-zinc-650 dark:hover:text-zinc-200 gap-0.5 z-10">
         <span class="material-icons-round text-lg leading-none">assignment</span>
-        <span class="text-[10px] font-extrabold tracking-wide">Riwayat Log</span>
+        <span class="text-[10px] font-extrabold tracking-wide">HISTORY</span>
       </button>
     </nav>
 
@@ -566,10 +571,10 @@
 
     // MENU DATA array
     var MENU_ITEMS = [
-      { id: 'gula-aren', name: 'Kopi Susu Gula Aren', price: 22000, img: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=200&h=200&fit=crop&q=80' },
-      { id: 'americano', name: 'Kopi Americano', price: 18000, img: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefda?w=200&h=200&fit=crop&q=80' },
-      { id: 'coklat', name: 'Coklat', price: 20000, img: 'https://images.unsplash.com/photo-1542990253-0d0f5be5f0ed?w=200&h=200&fit=crop&q=80' },
-      { id: 'matcha', name: 'Matcha', price: 24000, img: 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=200&h=200&fit=crop&q=80' }
+      { id: 'gula-aren', name: 'Kopi Susu Gula Aren', price: 13000, img: 'https://lh3.googleusercontent.com/d/1loBvbvUdCyIKHlqIltDp3eIPHAGFTmmv' },
+      { id: 'americano', name: 'Kopi Americano', price: 10000, img: 'https://lh3.googleusercontent.com/d/1S4VwLODeJ5p4aG_LwXx1hDSSmm2O5CSL' },
+      { id: 'coklat', name: 'Coklat', price: 10000, img: 'https://lh3.googleusercontent.com/d/18EJUB09zZHsfELnO63_a5n3VpYU0OzMV' },
+      { id: 'matcha', name: 'Matcha', price: 10000, img: 'https://lh3.googleusercontent.com/d/1n-LawknbS083-9Dr3ordu5Hs8z26AeZQ' }
     ];
 
     // Core States
@@ -1070,11 +1075,31 @@
       return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     }
 
+    function getWIBGreeting() {
+      // WIB is UTC+7
+      var utcDate = new Date();
+      var utcHours = utcDate.getUTCHours();
+      var wibHours = (utcHours + 7) % 24;
+      
+      if (wibHours >= 5 && wibHours < 12) {
+        return "Good Morning";
+      } else if (wibHours >= 12 && wibHours < 18) {
+        return "Good Afternoon";
+      } else {
+        return "Good Night";
+      }
+    }
+
     function renderHeroDate() {
       var days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
       var months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
       var d = new Date();
       document.getElementById('heroDate').textContent = days[d.getDay()] + ', ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+      
+      var greetingEl = document.getElementById('bannerGreeting');
+      if (greetingEl) {
+        greetingEl.textContent = getWIBGreeting();
+      }
     }
 
     function toggleTheme() {
@@ -1117,15 +1142,15 @@
             </div>
 
             <!-- Counter Stepper controller with neutral theme buttons -->
-            <div class="flex items-center justify-between w-full mt-1.5 px-0.5">
-              <button onclick="changeQty('${item.id}', -1)" class="w-7 h-7 rounded-lg border border-zinc-200 dark:border-zinc-750 bg-zinc-50 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 flex items-center justify-center font-bold active:scale-90 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-all select-none cursor-pointer">
-                <span class="material-icons-round text-xs select-none">remove</span>
+            <div class="flex items-center justify-center gap-4 w-full mt-2 px-1">
+              <button onclick="changeQty('${item.id}', -1)" class="w-10 h-10 rounded-xl border border-zinc-200 dark:border-zinc-750 bg-zinc-50 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 flex items-center justify-center font-black active:scale-90 hover:bg-zinc-150 dark:hover:bg-zinc-700 transition-all select-none cursor-pointer shadow-xs">
+                <span class="material-icons-round text-base select-none">remove</span>
               </button>
-              <span id="qty-val-${item.id}" class="text-xs font-bold text-zinc-800 dark:text-white min-w-[16px] text-center select-none">
+              <span id="qty-val-${item.id}" class="text-sm font-extrabold text-zinc-800 dark:text-white min-w-[20px] text-center select-none">
                 ${qty}
               </span>
-              <button onclick="changeQty('${item.id}', 1)" class="w-7 h-7 rounded-lg border border-zinc-200 dark:border-zinc-750 bg-zinc-50 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 flex items-center justify-center font-bold active:scale-90 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-all select-none cursor-pointer">
-                <span class="material-icons-round text-xs select-none">add</span>
+              <button onclick="changeQty('${item.id}', 1)" class="w-10 h-10 rounded-xl border border-zinc-200 dark:border-zinc-750 bg-zinc-50 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 flex items-center justify-center font-black active:scale-90 hover:bg-zinc-150 dark:hover:bg-zinc-700 transition-all select-none cursor-pointer shadow-xs">
+                <span class="material-icons-round text-base select-none">add</span>
               </button>
             </div>
           </div>
@@ -1440,30 +1465,47 @@
       fetchOrders(true);
     }
 
+    var rangeOrdersCache = [];
+    var visibleLimitHTML = 10;
+
     function refreshHistory() {
       historyCache = [];
       lazyOffset = 0;
-      showScreenLoader('Menyinkronkan data Google Spreadsheet...');
+      showScreenLoader('Tunggu sebentar ya...');
       fetchOrders(true);
     }
 
     function filterStatus(status) {
       currentStatusFilter = status;
 
-      // Highlight active sub-tab
+      // Highlight active sub-tab with custom borders
       document.querySelectorAll('#statusFilterWrap button').forEach(function(btn) {
-        btn.className = "status-tab px-3 py-1.5 text-[9.5px] font-black rounded-lg uppercase tracking-wider text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 transition-all";
+        var dt = btn.getAttribute('data-tab');
+        if (dt === 'all') {
+          btn.className = "status-tab px-3 py-1.5 text-[9.5px] font-black rounded-lg uppercase tracking-wider transition-all border " + 
+            (status === 'all' 
+              ? "border-amber-500 bg-amber-100 text-amber-900 dark:bg-zinc-800 dark:border-zinc-700 dark:text-amber-200 shadow-xs" 
+              : "border-zinc-200 dark:border-zinc-800 text-zinc-400 hover:text-zinc-600");
+        } else if (dt === 'Lunas') {
+          btn.className = "status-tab px-3 py-1.5 text-[9.5px] font-black rounded-lg uppercase tracking-wider transition-all border " + 
+            (status === 'Lunas' 
+              ? "border-emerald-500 bg-emerald-100 text-emerald-950/20 text-emerald-900 dark:bg-emerald-950/40 dark:border-emerald-500 dark:text-emerald-400 shadow-xs" 
+              : "border-emerald-500/25 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold");
+        } else if (dt === 'Belum Bayar') {
+          btn.className = "status-tab px-3 py-1.5 text-[9.5px] font-black rounded-lg uppercase tracking-wider transition-all border " + 
+            (status === 'Belum Bayar' 
+              ? "border-rose-500 bg-rose-100 text-rose-950/20 text-rose-900 dark:bg-rose-950/40 dark:border-rose-500 dark:text-rose-450 shadow-xs" 
+              : "border-rose-500/25 bg-rose-500/5 hover:bg-rose-500/10 text-rose-600 dark:text-rose-450 font-extrabold");
+        }
       });
-      
-      var targetTab = document.querySelector(`#statusFilterWrap button[data-tab="${status}"]`);
-      if (targetTab) {
-        targetTab.className = "status-tab px-3 py-1.5 text-[9.5px] font-black rounded-lg uppercase tracking-wider bg-coffee-100 text-coffee-800 dark:bg-zinc-800 dark:text-zinc-200 transition-all";
-      }
 
-      // Re-fetch since lazy loaded ranges differ per filter status
-      historyCache = [];
-      lazyOffset = 0;
-      fetchOrders(true);
+      visibleLimitHTML = 10;
+      renderHistoryCards();
+    }
+
+    function loadMoreHistoryLocal() {
+      visibleLimitHTML += 10;
+      renderHistoryCards();
     }
 
     // FETCH ORDERS WITH INTEGRATED LAZY PAGE (LIMIT & OFFSET) Slicing
@@ -1506,17 +1548,9 @@
           document.getElementById('stBestQty').textContent = '0 Terjual';
         }
 
-        document.getElementById('statusTotalValue').textContent = response.filteredCount || 0;
-
-        // Append sliced listings
-        if (isFirstLoad) {
-          historyCache = response.orders || [];
-        } else {
-          historyCache = historyCache.concat(response.orders || []);
-        }
-
-        lazyOffset = historyCache.length;
-        lazyHasMore = response.hasMore;
+        // Save complete list of orders inside global rangeOrdersCache
+        rangeOrdersCache = response.orders || [];
+        visibleLimitHTML = 10;
 
         renderHistoryCards();
       };
@@ -1527,26 +1561,37 @@
         toast('Connection Error: ' + (err.message || err), 'error');
       };
 
-      // Call Spreadsheet Backend depending on filters
+      // Always retrieve all (5000) transactions in status 'all' to support instant, 0-request filter-and-lazy page transitions!
       if (filterDateFrom || filterDateTo) {
         google.script.run
           .withSuccessHandler(cbSuccess)
           .withFailureHandler(cbError)
-          .getOrdersByRange(filterDateFrom, filterDateTo, lazyOffset, lazyLimit, currentStatusFilter);
+          .getOrdersByRange(filterDateFrom, filterDateTo, 0, 5000, 'all');
       } else {
         google.script.run
           .withSuccessHandler(cbSuccess)
           .withFailureHandler(cbError)
-          .getAllOrders(lazyOffset, lazyLimit, currentStatusFilter);
+          .getAllOrders(0, 5000, 'all');
       }
     }
 
     function renderHistoryCards() {
+      // Filter rangeOrdersCache by current state
+      var filtered = rangeOrdersCache;
+      if (currentStatusFilter !== 'all') {
+        filtered = rangeOrdersCache.filter(function(o) { return o.status === currentStatusFilter; });
+      }
+
+      document.getElementById('statusTotalValue').textContent = filtered.length;
+
+      var sliced = filtered.slice(0, visibleLimitHTML);
+      var hasMore = filtered.length > visibleLimitHTML;
+
       var list = document.getElementById('historyList');
       var emp = document.getElementById('historyEmpty');
       var loadMoreBtn = document.getElementById('loadMoreWrap');
 
-      if (historyCache.length === 0) {
+      if (sliced.length === 0) {
         list.innerHTML = '';
         emp.classList.remove('hidden');
         loadMoreBtn.classList.add('hidden');
@@ -1554,13 +1599,13 @@
       }
 
       emp.classList.add('hidden');
-      if (lazyHasMore) {
+      if (hasMore) {
         loadMoreBtn.classList.remove('hidden');
       } else {
         loadMoreBtn.classList.add('hidden');
       }
 
-      list.innerHTML = historyCache.map(function(o) {
+      list.innerHTML = sliced.map(function(o) {
         var isQris = o.paymentMethod === 'QRIS';
         var payTag = isQris 
           ? `<span class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400 font-bold text-[10px]">QRIS</span>`
@@ -1575,8 +1620,13 @@
           ? `<p class="text-[11px] text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/80 p-2 rounded-xl mt-2 flex items-center gap-1"><span class="material-icons-round text-sm" style="font-size:13px">sticky_note_2</span>${o.note}</p>`
           : ``;
 
+        // Card background: Green if Lunas, Red if Belum Bayar
+        var cardClass = isLunas
+          ? "border p-4 rounded-2xl shadow-xs relative anim-fade-in block bg-emerald-50/15 dark:bg-emerald-950/10 border-emerald-500/20 dark:border-emerald-500/30 transition-all duration-300"
+          : "border p-4 rounded-2xl shadow-xs relative anim-fade-in block bg-rose-50/15 dark:bg-rose-950/10 border-rose-500/20 dark:border-rose-500/30 transition-all duration-300";
+
         return `
-          <div class="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800/80 p-4 rounded-2xl shadow-xs relative anim-fade-in block">
+          <div class="${cardClass}">
             
             <div class="flex justify-between items-start gap-4 mb-2">
               <div>
@@ -1615,7 +1665,7 @@
       document.getElementById('editSubtitle').textContent = id;
       
       // Find row values in cache list
-      var rec = historyCache.find(function(it) { return it.orderId === id; });
+      var rec = rangeOrdersCache.find(function(it) { return it.orderId === id; });
       if (rec) {
         document.getElementById('editPayMethodSelect').value = rec.paymentMethod;
         document.getElementById('editStatusSelect').value = rec.status;
@@ -1846,7 +1896,7 @@ function doGet(e) {
 
   // Otherwise, fallback to rendering the spreadsheet integrated HTML UI
   return HtmlService.createHtmlOutputFromFile('index')
-    .setTitle('☕ Kopi Nusantara POS')
+    .setTitle('POS Coffee')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, user-scalable=no');
 }
@@ -1920,20 +1970,20 @@ function getOrCreateOrdersSheet() {
             ss = SpreadsheetApp.openById(ssId);
           }
         } catch (err) {
-          ss = SpreadsheetApp.create('Kopi Nusantara POS Database');
+          ss = SpreadsheetApp.create('POS Coffee Database');
           properties.setProperty('SPREADSHEET_ID', ss.getId());
         }
       } else {
-        ss = SpreadsheetApp.create('Kopi Nusantara POS Database');
+        ss = SpreadsheetApp.create('POS Coffee Database');
         properties.setProperty('SPREADSHEET_ID', ss.getId());
       }
     }
   }
   
-  var sheet = ss.getSheetByName('Orders');
+  var sheet = ss.getSheetByName('sales_order');
   if (!sheet) {
-    sheet = ss.insertSheet('Orders');
-    sheet.appendRow(['Order ID', 'Tanggal', 'Waktu', 'Items', 'Total Qty', 'Total', 'Payment Method', 'Status', 'Note']);
+    sheet = ss.insertSheet('sales_order');
+    sheet.appendRow(['Order ID', 'Tanggal', 'Waktu', 'Items', 'Total Qty', 'Total Harga', 'Metode Bayar', 'Catatan', 'Status Bayar']);
     sheet.getRange(1, 1, 1, 9).setFontWeight('bold').setBackground('#a0784a').setFontColor('#ffffff');
     sheet.setFrozenRows(1);
   }
@@ -1951,22 +2001,32 @@ function getOrdersFromSheet(filterFromDate, filterToDate) {
   for (var i = 0; i < dataRows.length; i++) {
     var r = dataRows[i];
     var orderId = String(r[0] || '');
-    var tanggal = String(r[1] || ''); 
+    
+    // Fast high-performance date parser bypass
+    var val1 = r[1];
+    var tanggal = '';
+    if (val1 instanceof Date) {
+      tanggal = val1.getFullYear() + '-' + ('0' + (val1.getMonth() + 1)).slice(-2) + '-' + ('0' + val1.getDate()).slice(-2);
+    } else {
+      tanggal = String(val1 || '');
+      if (tanggal.indexOf('GMT') !== -1) {
+        var d = new Date(tanggal);
+        tanggal = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+      } else if (tanggal.indexOf('T') !== -1) {
+        tanggal = tanggal.split('T')[0];
+      }
+    }
+    
+    if (filterFromDate && tanggal < filterFromDate) continue;
+    if (filterToDate && tanggal > filterToDate) continue;
+    
     var waktu = String(r[2] || '');
     var items = String(r[3] || '');
     var totalQty = Number(r[4] || 0);
     var total = Number(r[5] || 0);
     var paymentMethod = String(r[6] || '');
-    var status = String(r[7] || 'Belum Bayar');
-    var note = String(r[8] || '');
-    
-    if (tanggal && tanggal.indexOf('GMT') !== -1) {
-      var d = new Date(tanggal);
-      tanggal = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
-    }
-    
-    if (filterFromDate && tanggal < filterFromDate) continue;
-    if (filterToDate && tanggal > filterToDate) continue;
+    var note = String(r[7] || '');
+    var status = String(r[8] || 'Belum Bayar');
     
     orders.push({ orderId: orderId, tanggal: tanggal, waktu: waktu, items: items, totalQty: totalQty, total: total, paymentMethod: paymentMethod, status: status, note: note });
   }
@@ -2016,7 +2076,7 @@ function submitOrder(data) {
     }
     var itemsFormatted = itemStrings.join(', ');
     
-    sheet.appendRow([orderId, tanggal, waktu, itemsFormatted, totalQty, Number(data.total), data.pay, data.status, data.note]);
+    sheet.appendRow([orderId, tanggal, waktu, itemsFormatted, totalQty, Number(data.total), data.pay, data.note || '', data.status || 'Belum Bayar']);
     return { success: true, orderId: orderId };
   } catch (err) {
     return { success: false, message: err.toString() };
@@ -2076,9 +2136,9 @@ function updateOrderMeta(orderId, status, paymentMethod) {
     var rows = sheet.getDataRange().getValues();
     for (var i = 1; i < rows.length; i++) {
       if (String(rows[i][0]).trim() === String(orderId).trim()) {
+        // Update payment method (column 7) and status (column 9)
         sheet.getRange(i + 1, 7).setValue(paymentMethod);
-        sheet.getRange(i + 1, 8).setValue(status);
-        SpreadsheetApp.flush();
+        sheet.getRange(i + 1, 9).setValue(status);
         return { success: true };
       }
     }
@@ -2095,7 +2155,6 @@ function deleteOrder(orderId) {
     for (var i = 1; i < rows.length; i++) {
       if (String(rows[i][0]).trim() === String(orderId).trim()) {
         sheet.deleteRow(i + 1);
-        SpreadsheetApp.flush();
         return { success: true };
       }
     }
