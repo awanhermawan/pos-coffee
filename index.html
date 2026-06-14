@@ -1,0 +1,2130 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>☕ Kopi Nusantara POS</title>
+  
+  <!-- Tailwind CSS CDN (V3) for perfect compilation in Google Apps Script and offline apps -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Font and Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  
+  <script>
+    // Immediate dark-mode application to eliminate any bright flashes or white silhouettes on load
+    (function() {
+      try {
+        var t = localStorage.getItem('kopi_pos_theme') || 'light';
+        if (t === 'dark') document.documentElement.classList.add('dark');
+        else document.documentElement.classList.remove('dark');
+      } catch (e) {}
+    })();
+
+    // Tailwind Config for custom theme colors
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            coffee: {
+              50: '#fdfbf7',
+              100: '#f3ece1',
+              200: '#ebe1d0',
+              300: '#dfcfb7',
+              400: '#c5ad8d',
+              500: '#a88a64',
+              600: '#a0784a', // Primary Accent
+              700: '#876539', // Darker Accent
+              800: '#5c4426',
+              900: '#342615',
+            }
+          },
+          fontFamily: {
+            sans: ['Roboto', 'sans-serif'],
+            inter: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom non-standard styling rules */
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html, body {
+      background-color: #fcfaf6;
+      font-family: 'Roboto', 'Inter', sans-serif;
+    }
+    html.dark, html.dark body {
+      background-color: #09090b;
+    }
+    body {
+      padding-bottom: 76px;
+      -webkit-user-select: none;
+      user-select: none;
+      font-family: 'Roboto', 'Inter', sans-serif;
+    }
+    
+    .keep-inter, .keep-inter * {
+      font-family: 'Inter', sans-serif !important;
+    }
+    
+    /* Custom Scrollbar */
+    .custom-scroll::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(160, 120, 74, 0.2);
+      border-radius: 4px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(160, 120, 74, 0.4);
+    }
+    
+    /* Animation helper classes */
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.9); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .anim-slide-up { animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
+    .anim-fade-in { animation: fadeIn 0.25s ease-out forwards; }
+    .anim-pop-in { animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+  </style>
+</head>
+<body class="bg-[#fcfaf6] text-zinc-900 font-sans transition-colors duration-300 dark:bg-zinc-950 dark:text-zinc-100">
+
+  <!-- Toast wrapper notification -->
+  <div class="fixed top-4 left-4 right-4 z-[9999] pointer-events-none flex flex-col gap-2 max-w-sm mx-auto" id="toastWrap"></div>
+
+  <!-- Loading Overlay -->
+  <div class="fixed inset-0 bg-black/60 z-[999] hidden items-center justify-center p-4 backdrop-blur-xs" id="loadingWrap">
+    <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 flex flex-col items-center max-w-xs w-full shadow-2xl text-center anim-pop-in">
+      <div class="w-12 h-12 rounded-full border-4 border-amber-200 dark:border-zinc-800 border-t-coffee-600 dark:border-t-coffee-500 animate-spin mb-4"></div>
+      <p class="text-sm font-bold text-zinc-800 dark:text-zinc-200" id="loadingMsg">Membaca data database...</p>
+      <p class="text-[10px] text-zinc-400 mt-1 dark:text-zinc-500">Google Apps Script API</p>
+    </div>
+  </div>
+
+  <!-- Success Save Order Modal -->
+  <div class="fixed inset-0 bg-black/60 z-[900] hidden items-end sm:items-center justify-center p-4 backdrop-blur-xs" id="successModal">
+    <div class="bg-white dark:bg-zinc-900 rounded-t-3xl sm:rounded-2xl border border-zinc-100 dark:border-zinc-800 p-6 max-w-md w-full shadow-2xl anim-slide-up sm:anim-pop-in text-center">
+      <div class="w-16 h-16 bg-emerald-150 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4">
+        <span class="material-icons-round text-3xl">check_circle</span>
+      </div>
+      <h3 class="font-extrabold text-xl mb-1 text-zinc-900 dark:text-white">Order Tersimpan! 🎉</h3>
+      <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-5">Pesanan berhasil dicatat dalam Google Sheet database</p>
+      
+      <div class="bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 mb-6 font-mono text-xs text-coffee-600 dark:text-coffee-400 font-bold tracking-wider" id="successOid">
+        ORD-XXXXX
+      </div>
+
+      <button onclick="closeSuccess()" class="w-full py-3.5 bg-coffee-600 hover:bg-coffee-700 hover:shadow active:scale-98 text-white rounded-xl font-bold transition-all text-sm shadow-md">
+        Selesai & Lanjutkan
+      </button>
+    </div>
+  </div>
+
+  <!-- Settings Drawer / Modal -->
+  <div class="fixed inset-0 bg-black/60 z-[900] hidden items-end sm:items-center justify-center p-4 backdrop-blur-xs animate-fade-in" id="settingsModal" onclick="if(event.target===this) closeSettings()">
+    <div class="bg-white dark:bg-zinc-900 rounded-t-3xl sm:rounded-2xl border border-zinc-100 dark:border-zinc-800 p-6 max-w-sm w-full shadow-2xl anim-slide-up sm:anim-pop-in space-y-4">
+      <div class="flex justify-between items-center pb-2 border-b border-zinc-150 dark:border-zinc-800">
+        <h3 class="font-extrabold text-md flex items-center gap-2 text-zinc-900 dark:text-white">
+          <span class="material-icons-round text-coffee-600">settings</span>
+          Pengaturan Database
+        </h3>
+        <button onclick="closeSettings()" class="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 transition-all">
+          <span class="material-icons-round text-md">close</span>
+        </button>
+      </div>
+
+      <!-- Web App URL Setting -->
+      <div class="space-y-2">
+        <label class="block text-[10px] font-extrabold uppercase tracking-widest text-[#a0784a] dark:text-amber-400">Google Sheets Web App URL</label>
+        <div class="flex gap-2">
+          <input type="text" id="webAppUrlInput" oninput="saveWebAppUrl()" placeholder="https://script.google.com/macros/s/.../exec" class="flex-1 text-xs bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 p-3 rounded-xl focus:outline-none focus:ring-1 focus:ring-coffee-500 font-mono tracking-tight text-zinc-700 dark:text-zinc-100">
+          <button onclick="clearWebAppUrl()" class="w-11 h-11 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-rose-500 hover:text-rose-600 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0" title="Kosongkan (Kembali ke Local Simulator)">
+            <span class="material-icons-round text-sm">link_off</span>
+          </button>
+        </div>
+        <div class="flex items-center gap-1.5 text-[10px] text-zinc-400 dark:text-zinc-500 font-bold" id="webAppUrlStatus">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          Menggunakan Local Simulator (Offline Mode)
+        </div>
+      </div>
+
+      <!-- Apps Script Integration Helper -->
+      <div class="bg-amber-50/40 dark:bg-zinc-800/40 border border-amber-200/20 dark:border-zinc-800 p-4 rounded-2xl space-y-2.5">
+        <div class="flex items-center gap-2 text-amber-900 dark:text-amber-300 text-xs font-bold">
+          <span class="material-icons-round text-sm">code</span>
+          Script Google Apps Script (code.gs)
+        </div>
+        <p class="text-[10px] text-zinc-500 dark:text-zinc-400 leading-normal">
+          Salin script backend ini untuk sinkronisasi Real-Time dengan spreadsheet Anda secara otomatis. Mendukung fitur lazy loading agar spreadsheet memuat data dengan cepat.
+        </p>
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button onclick="copyCode()" class="py-2.5 bg-coffee-600 text-white rounded-xl text-[10px] font-black hover:bg-coffee-700 active:scale-95 transition-all text-center flex items-center justify-center gap-1">
+            <span class="material-icons-round text-xs">content_copy</span> Salin Kode
+          </button>
+          <button onclick="downloadCode()" class="py-2.5 border border-zinc-200 dark:border-zinc-750 text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 rounded-xl text-[10px] font-black hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-all text-center flex items-center justify-center gap-1">
+            <span class="material-icons-round text-xs">file_download</span> Format .gs
+          </button>
+        </div>
+      </div>
+      
+      <!-- Instructions accordion -->
+      <details class="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
+        <summary class="cursor-pointer text-[10px] font-bold text-coffee-600 dark:text-coffee-400 select-none pb-1">Tampilkan Kode Backend spreadsheet</summary>
+        <pre class="mt-2 text-left bg-zinc-950 p-3 rounded-lg text-zinc-300 overflow-x-auto max-h-40 text-[9.5px] font-mono leading-relaxed custom-scroll" id="codeArea"></pre>
+      </details>
+    </div>
+  </div>
+
+  <!-- Edit Order Status Modal -->
+  <div class="fixed inset-0 bg-black/60 z-[900] hidden items-end sm:items-center justify-center p-4 backdrop-blur-xs animate-fade-in" id="editModal">
+    <div class="bg-white dark:bg-zinc-900 rounded-t-3xl sm:rounded-2xl border border-zinc-100 dark:border-zinc-800 p-6 max-w-sm w-full shadow-2xl anim-slide-up sm:anim-pop-in">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="font-extrabold text-lg flex items-center gap-2 text-zinc-900 dark:text-white">
+          <span class="material-icons-round text-coffee-600">edit</span>
+          Edit Transaksi
+        </h3>
+        <button onclick="closeEdit()" class="p-1 px-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-400 hover:text-zinc-600 dark:text-zinc-400">
+          <span class="material-icons-round text-sm">close</span>
+        </button>
+      </div>
+      
+      <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-4">
+        ID Transaksi: <strong class="text-coffee-600 dark:text-coffee-400 font-mono" id="editSubtitle">ORD-XXXX</strong>
+      </p>
+
+      <div class="space-y-4 mb-6">
+        <div>
+          <label class="text-[10px] uppercase font-extrabold tracking-wider text-zinc-400 mb-1.5 block">Metode Pembayaran</label>
+          <select id="editPayMethodSelect" class="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-750 p-3 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-coffee-500 text-zinc-700 dark:text-zinc-300">
+            <option value="QRIS">QRIS</option>
+            <option value="Cash">Cash</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-[10px] uppercase font-extrabold tracking-wider text-zinc-400 mb-1.5 block">Status Pembayaran</label>
+          <select id="editStatusSelect" class="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-750 p-3 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-coffee-500 text-zinc-700 dark:text-zinc-300">
+            <option value="Belum Bayar">Belum Bayar</option>
+            <option value="Lunas">Lunas</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex gap-2.5 mb-4">
+        <button onclick="closeEdit()" class="flex-1 py-3 border border-zinc-200 dark:border-zinc-700 font-bold hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl text-xs transition-colors dark:text-zinc-300">
+          Batal
+        </button>
+        <button onclick="saveEdit()" class="flex-1 py-3 bg-coffee-600 hover:bg-coffee-700 text-white font-bold rounded-xl text-xs shadow-md transition-colors">
+          Simpan
+        </button>
+      </div>
+
+      <div class="pt-3 border-t border-zinc-100 dark:border-zinc-800">
+        <button onclick="deleteFromEdit()" class="w-full py-3 bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/30 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 border border-rose-100 dark:border-rose-950/40 transition-colors">
+          <span class="material-icons-round text-sm">delete</span>
+          Hapus Transaksi
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cart Overlay Backdrop -->
+  <div class="fixed inset-0 bg-black/50 z-[400] hidden transition-opacity duration-300 backdrop-blur-xs" id="sheetOverlay" onclick="closeSheet()"></div>
+
+  <!-- Checkout Drawer (Sheet) -->
+  <div class="fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 rounded-t-3xl z-[500] hidden flex-col max-h-[92vh] overflow-y-auto shadow-2xl transition-all duration-350 pb-safe" id="cartSheet">
+    <!-- Pull Line indicator -->
+    <div class="w-12 h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full mx-auto my-3 shrink-0"></div>
+    
+    <div class="flex justify-between items-center px-5 py-2 shrink-0">
+      <h2 class="font-extrabold text-md flex items-center gap-2">
+        <span class="material-icons-round text-coffee-600">receipt</span>
+        Ringkasan Order
+      </h2>
+      <button onclick="closeSheet()" class="p-1 px-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-500 rounded-lg">
+        <span class="material-icons-round text-xs">close</span>
+      </button>
+    </div>
+
+    <!-- Items container - fully expanded without inner scrolling -->
+    <div class="px-5 py-3 divide-y divide-zinc-100 dark:divide-zinc-800 shrink-0" id="sheetBody">
+      <div class="py-12 text-center text-zinc-400">
+        <span class="material-icons-round text-4xl opacity-20 mb-3">shopping_cart</span>
+        <p class="text-xs">Keranjang Anda kosong</p>
+      </div>
+    </div>
+
+    <!-- Footer settings checkout (revealed only if cart has items) -->
+    <div class="border-t border-zinc-100 dark:border-zinc-800 p-5 bg-zinc-50/50 dark:bg-zinc-900/50 space-y-4 shrink-0" id="sheetFooter" style="display: none;">
+      <div class="flex justify-between items-center">
+        <span class="text-sm font-bold text-zinc-600 dark:text-zinc-400">Total Transaksi</span>
+        <span class="text-2xl font-black text-coffee-600 dark:text-coffee-400" id="sheetTotal">Rp 0</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3.5">
+        <div>
+          <label class="text-[10px] uppercase font-extrabold tracking-wider text-zinc-400 mb-1.5 block">Metode Pembayaran</label>
+          <select id="payMethod" class="w-full bg-white dark:bg-zinc-800 text-xs border border-zinc-200 dark:border-zinc-700 p-2.5 rounded-xl font-bold focus:outline-none focus:ring-1 focus:ring-coffee-500 text-zinc-700 dark:text-zinc-200">
+            <option value="QRIS">QRIS</option>
+            <option value="Cash">Cash</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-[10px] uppercase font-extrabold tracking-wider text-zinc-400 mb-1.5 block">Status Bayar</label>
+          <select id="payStatus" class="w-full bg-white dark:bg-zinc-800 text-xs border border-zinc-200 dark:border-zinc-700 p-2.5 rounded-xl font-bold focus:outline-none focus:ring-1 focus:ring-coffee-500 text-zinc-700 dark:text-zinc-200">
+            <option value="Belum Bayar">Belum Bayar</option>
+            <option value="Lunas">Lunas</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="text-[10px] uppercase font-extrabold tracking-wider text-zinc-400 mb-1.5 block">Catatan Tambahan (opsional)</label>
+        <input type="text" id="orderNote" placeholder="Contoh: Meja 5 / Pesanan atas nama siapa?" class="w-full bg-white dark:bg-zinc-800 text-xs border border-zinc-200 dark:border-zinc-700 p-3 rounded-xl focus:outline-none focus:ring-1 focus:ring-coffee-500 text-zinc-800 dark:text-zinc-100">
+      </div>
+
+      <button onclick="submitOrder()" class="w-full py-4 text-sm font-black text-white bg-coffee-600 hover:bg-coffee-700 active:scale-[0.98] rounded-xl flex items-center justify-center gap-2 transition-all shadow-md">
+        <span class="material-icons-round text-lg">check</span>
+        Simpan Order Ke Spreadsheet
+      </button>
+
+      <button onclick="clearCart()" class="w-full py-2.5 text-xs text-rose-500 dark:text-rose-400 font-bold hover:bg-rose-50 dark:hover:bg-rose-950/20 border border-dotted border-rose-200 dark:border-rose-950/40 rounded-xl flex items-center justify-center gap-1.5 transition-all">
+        <span class="material-icons-round text-sm">delete</span>
+        Hapus Keranjang
+      </button>
+    </div>
+  </div>
+
+  <!-- Bottom Floating Cart Trigger (FAB) -->
+  <button id="fabCart" onclick="openSheet()" class="fixed bottom-20 right-4 sm:right-[calc(50%-224px)] z-[190] bg-coffee-600 text-white w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg hover:bg-coffee-700 dark:hover:bg-coffee-500 transform scale-0 pointer-events-none transition-all duration-300">
+    <span class="material-icons-round text-2xl">shopping_cart</span>
+    <span id="fabCount" class="absolute -top-1.5 -right-1.5 bg-rose-500 text-white min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-black border-2 border-white dark:border-zinc-950 flex items-center justify-center">0</span>
+  </button>
+
+  <!-- ========================================== -->
+  <!-- LAYOUT CONTAINER FRAME -->
+  <!-- ========================================== -->
+  <div class="max-w-[480px] mx-auto bg-white dark:bg-zinc-900 min-h-screen shadow-2xl border-x border-zinc-100 dark:border-zinc-800/60 flex flex-col transition-colors duration-300">
+    
+    <!-- Hero Header Brand as an Eye-Catching Banner -->
+    <div id="heroBanner" class="keep-inter relative overflow-hidden mx-4 mt-4 mb-2 rounded-2xl h-32 bg-zinc-900 shadow-md group border border-zinc-200/10 dark:border-zinc-800/50">
+      <!-- Background Image with Overlay -->
+      <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=800&auto=format&fit=crop" 
+           alt="Kopi Nusantara Banner" 
+           referrerpolicy="no-referrer"
+           class="absolute inset-0 w-full h-full object-cover object-center transform scale-105 group-hover:scale-100 transition-transform duration-700 opacity-65 dark:opacity-45">
+      
+      <!-- Gradient tint overlays -->
+      <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-black/30 dark:from-zinc-950/95 dark:via-zinc-900/60 dark:to-transparent"></div>
+      
+      <!-- Banner Content Container -->
+      <div class="absolute inset-0 p-4 flex flex-col justify-between z-10 text-white">
+        <!-- Banner Top Row: Small Badge & Theme Toggle -->
+        <div class="flex justify-between items-center">
+          <div class="inline-flex items-center gap-1 bg-white/10 dark:bg-zinc-900/40 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest text-[#e4c59e]">
+            <span class="w-1 h-1 rounded-full bg-amber-400 animate-pulse"></span>
+            Kopi Nusantara POS
+          </div>
+          
+          <!-- Compact floating theme toggle -->
+          <button onclick="toggleTheme()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 active:scale-90 dark:bg-zinc-950/40 dark:hover:bg-zinc-800/60 backdrop-blur-md flex items-center justify-center transition-all border border-white/10 dark:border-zinc-800/40 text-white" title="Beralih Tema">
+            <span class="material-icons-round text-sm cursor-pointer" id="themeIcon">light_mode</span>
+          </button>
+        </div>
+
+        <!-- Banner Bottom Row: Branding Title & Date -->
+        <div class="space-y-0.5">
+          <div class="flex items-center gap-1">
+            <h1 class="font-extrabold text-md sm:text-lg tracking-tight leading-none text-white drop-shadow-sm">
+              Pos Kopi Nusantara
+            </h1>
+            <span class="text-xs">☕</span>
+          </div>
+          <p class="text-[8.5px] text-zinc-300 dark:text-zinc-400 font-bold uppercase tracking-wider leading-none">
+            Spreadsheet Database Engine
+          </p>
+          
+          <!-- Elegant minimal date row -->
+          <div class="flex items-center gap-1 text-[9px] text-amber-200/90 dark:text-amber-300/80 font-semibold pt-0.5">
+            <span class="material-icons-round text-[10px] leading-none">calendar_today</span>
+            <span id="heroDate">Minggu, 13 Juni 2026</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- PRIMARY PAGE-VIEW: ORDER SHEET -->
+    <!-- ========================================== -->
+    <div class="flex-1 px-5 py-4 space-y-6" id="pageOrder">
+      
+      <!-- Menu title -->
+      <div>
+        <div class="flex items-center gap-1.5 text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-3.5">
+          <span class="material-icons-round text-sm text-coffee-600 leading-none">restaurant_menu</span>
+          Pilihan Menu Kopi
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5" id="menuGrid"></div>
+      </div>
+
+      <!-- Custom items form addition -->
+      <div class="bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/80 dark:border-zinc-800 p-5 rounded-3xl">
+        <div class="flex items-center gap-1.5 text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-4">
+          <span class="material-icons-round text-sm text-coffee-600 leading-none">auto_awesome</span>
+          Custom Item Tambahan
+        </div>
+
+        <div class="flex gap-2.5 items-end">
+          <div class="flex-1 min-w-0 space-y-3">
+            <div>
+              <label class="text-[9px] uppercase font-bold tracking-wider text-zinc-400 block mb-1">Nama Minuman / Makanan</label>
+              <input type="text" id="customName" placeholder="Contoh: Kopi Tubruk, Bakwan" class="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 p-2.5 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-coffee-500">
+            </div>
+            <div>
+              <label class="text-[9px] uppercase font-bold tracking-wider text-zinc-400 block mb-1">Harga Satuan (Rp)</label>
+              <input type="text" id="customPrice" inputmode="numeric" placeholder="Contoh: 15.000" class="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 p-2.5 rounded-xl text-xs font-mono font-bold focus:outline-none focus:ring-1 focus:ring-coffee-500" oninput="formatCustomPriceInput(this)">
+            </div>
+          </div>
+
+          <button onclick="addCustom()" class="w-12 h-12 bg-coffee-600 hover:bg-coffee-700 hover:shadow text-white rounded-xl flex items-center justify-center shrink-0 transition-all active:scale-95" title="Tambah Custom">
+            <span class="material-icons-round text-2xl font-bold">add</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- PRIMARY PAGE-VIEW: HISTORY/RIWAYAT LIST SHEET -->
+    <!-- ========================================== -->
+    <div class="flex-1 hidden" id="pageHistory">
+      <!-- Header Back Navbar -->
+      <div class="px-5 py-3 border-b border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-90 w-full sticky top-0 z-50 flex items-center justify-between shadow-xs">
+        <button onclick="showPage('order')" class="flex items-center gap-1.5 text-zinc-850 dark:text-zinc-200 hover:text-coffee-600 dark:hover:text-coffee-400 font-extrabold text-sm transition-all cursor-pointer select-none">
+          &lt; Back to Ambil Order
+        </button>
+      </div>
+
+      <div class="px-5 py-4 space-y-5">
+      
+      <!-- Range selects preset tools -->
+      <div>
+        <div class="flex items-center justify-between mb-3.5 flex-wrap gap-2">
+          <span class="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 leading-none">
+            <span class="material-icons-round text-sm text-coffee-600 leading-none">history</span>
+            Filter Rentang Transaksi
+          </span>
+          <button onclick="refreshHistory()" class="text-[11px] text-coffee-600 dark:text-coffee-400 hover:underline font-bold flex items-center gap-1">
+            <span class="material-icons-round text-xs animate-spin-hover">sync</span>
+            Sinkron Sheets
+          </button>
+        </div>
+
+        <!-- Presets Carousel chips -->
+        <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-none scroll-smooth snap-x snap-mandatory">
+          <button onclick="setRange('today')" class="preset-chip shrink-0 px-4 py-2 text-xs font-extrabold rounded-xl border border-coffee-200 bg-coffee-100 text-coffee-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300 shadow-xs snap-start transition-all" id="preset-today">Hari Ini</button>
+          <button onclick="setRange('yesterday')" class="preset-chip shrink-0 px-4 py-2 text-xs font-extrabold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 snap-start transition-all" id="preset-yesterday">Kemarin</button>
+          <button onclick="setRange('7d')" class="preset-chip shrink-0 px-4 py-2 text-xs font-extrabold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 snap-start transition-all" id="preset-7d">7 Hari</button>
+          <button onclick="setRange('14d')" class="preset-chip shrink-0 px-4 py-2 text-xs font-extrabold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 snap-start transition-all" id="preset-14d">14 Hari</button>
+          <button onclick="setRange('30d')" class="preset-chip shrink-0 px-4 py-2 text-xs font-extrabold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 snap-start transition-all" id="preset-30d">30 Hari</button>
+        </div>
+
+        <!-- Manual pick dates -->
+        <div class="grid grid-cols-2 gap-3 mt-3.5 bg-zinc-50/50 dark:bg-zinc-800/20 border border-zinc-200/50 dark:border-zinc-800 p-3 rounded-2xl">
+          <div>
+            <label class="text-[9px] uppercase font-bold text-zinc-400 dark:text-zinc-500 block mb-1">Tanggal Mulai</label>
+            <input type="date" id="dateFrom" onchange="setRange('custom')" class="w-full bg-white dark:bg-zinc-800 p-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-coffee-500 text-zinc-700 dark:text-zinc-300">
+          </div>
+          <div>
+            <label class="text-[9px] uppercase font-bold text-zinc-400 dark:text-zinc-500 block mb-1">Tanggal Selesai</label>
+            <input type="date" id="dateTo" onchange="setRange('custom')" class="w-full bg-white dark:bg-zinc-800 p-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-coffee-500 text-zinc-700 dark:text-zinc-300">
+          </div>
+        </div>
+      </div>
+
+      <!-- PERFORMANCE STATISTICAL REAL-TIME CARDS -->
+      <div class="bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/40 dark:border-zinc-800 rounded-2xl p-4.5">
+        <p class="text-[9px] uppercase font-extrabold tracking-widest text-zinc-400 dark:text-zinc-500 mb-3 block">Dashboard Ringkasan Angka</p>
+
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div class="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-xl p-3 text-center">
+            <span class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase block mb-1">Debit/QRIS</span>
+            <span class="text-xs font-black text-blue-600 dark:text-blue-400" id="stQris">Rp 0</span>
+          </div>
+          <div class="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-xl p-3 text-center">
+            <span class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase block mb-1">Uang Tunai Cash</span>
+            <span class="text-xs font-black text-emerald-600 dark:text-emerald-400" id="stCash">Rp 0</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div class="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-xl p-3 text-center flex flex-col justify-center">
+            <span class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase block mb-1">Volume Transaksi</span>
+            <span class="text-md font-black text-zinc-800 dark:text-white" id="stCount">0</span>
+          </div>
+          <div class="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-xl p-3 text-center flex flex-col justify-center">
+            <span class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase block mb-1 text-center font-bold">⭐ Best Seller</span>
+            <span class="text-[11px] font-black text-coffee-600 dark:text-coffee-400 block truncate" id="stBestName">-</span>
+            <span class="text-[9px] text-zinc-400 block leading-none mt-0.5" id="stBestQty">0 terjual</span>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-xl p-4 text-center">
+          <span class="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase block mb-1">Total Omset Pendapatan</span>
+          <span class="text-xl font-black text-emerald-600 dark:text-emerald-400" id="stRevenue">Rp 0</span>
+        </div>
+      </div>
+
+      <!-- ORDER CARDS DATA AND LAZY LOADING TRIGGER -->
+      <div>
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-4 border-b border-zinc-150 dark:border-zinc-800 pb-3">
+          <div class="flex items-center gap-1.5" id="statusFilterWrap">
+            <button onclick="filterStatus('all')" class="status-tab px-3 py-1.5 text-[9.5px] font-black rounded-lg uppercase tracking-wider bg-coffee-100 text-coffee-800 dark:bg-zinc-800 dark:text-zinc-200 transition-all" data-tab="all">Semua</button>
+            <button onclick="filterStatus('Lunas')" class="status-tab px-3 py-1.5 text-[9.5px] font-black rounded-lg uppercase tracking-wider text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 transition-all" data-tab="Lunas">Lunas</button>
+            <button onclick="filterStatus('Belum Bayar')" class="status-tab px-3 py-1.5 text-[9.5px] font-black rounded-lg uppercase tracking-wider text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 transition-all" data-tab="Belum Bayar">Belum Bayar</button>
+          </div>
+
+          <div class="text-[10px] text-zinc-400 dark:text-zinc-500 font-bold uppercase tracking-wider">
+            Total Sesuai Filter: <span class="text-coffee-600 dark:text-coffee-400" id="statusTotalValue">0</span>
+          </div>
+        </div>
+
+        <!-- History cards loader -->
+        <div class="space-y-3" id="historyList"></div>
+
+        <!-- Empty indicator flag -->
+        <div class="hidden py-14 text-center text-zinc-400" id="historyEmpty">
+          <span class="material-icons-round text-5xl opacity-15 mb-3">inbox</span>
+          <p class="text-sm font-bold">Belum ada Transaksi order Masuk</p>
+          <p class="text-[10px] text-zinc-400/80 mt-1">Order baru akan tercatat di sini</p>
+        </div>
+
+        <!-- Lazy loading bottom triggers -->
+        <div class="text-center py-5 hidden" id="loadMoreWrap">
+          <button onclick="fetchOrders(false)" class="px-5 py-2.5 border border-zinc-250 dark:border-zinc-750 font-bold text-xs rounded-xl inline-flex items-center gap-1.5 bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 shadow-xs transition-colors dark:text-zinc-300 active:scale-95">
+            <span class="material-icons-round text-sm">expand_more</span>
+            Tampilkan Lebih Banyak (Lazy Page)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    </div>
+
+    <!-- Bottom Navigation Bar Fixed Footer -->
+    <nav class="fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto z-[210] bg-white/95 dark:bg-zinc-900/95 border-t border-zinc-150 dark:border-zinc-800 backdrop-blur-md flex h-16 justify-around items-center transition-all">
+      <!-- License Trademark brand badge -->
+      <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 pointer-events-none">
+        <span class="bg-zinc-100 dark:bg-zinc-800 text-[8px] font-extrabold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 border border-zinc-200 dark:border-zinc-750 px-2 py-0.5 rounded-full select-none">
+          founderbycloud
+        </span>
+      </div>
+
+      <button id="navOrderBtn" onclick="showPage('order')" class="nav-btn flex-1 flex flex-col items-center justify-center text-coffee-600 dark:text-coffee-400 gap-0.5">
+        <span class="material-icons-round text-lg leading-none">add_shopping_cart</span>
+        <span class="text-[10px] font-extrabold tracking-wide">Ambil Order</span>
+      </button>
+
+      <button id="navHistoryBtn" onclick="showPage('history')" class="nav-btn flex-1 flex flex-col items-center justify-center text-zinc-400 hover:text-zinc-650 dark:hover:text-zinc-200 gap-0.5">
+        <span class="material-icons-round text-lg leading-none">assignment</span>
+        <span class="text-[10px] font-extrabold tracking-wide">Riwayat Log</span>
+      </button>
+    </nav>
+
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- INTERNAL JAVASCRIPT APPLICATION CONTROL AND GOOGLE APPS SCRIPT POLYFILL -->
+  <!-- ========================================================================= -->
+  <script>
+    // ==========================================
+    // CONFIGURATION: HARDCODE YOUR GOOGLE SCRIPT URL HERE
+    // ==========================================
+    // Tempelkan URL Web App Apps Script Anda di bawah ini agar POS otomatis terhubung langsung permanently!
+    // Contoh: var HARDCODED_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwtMbeP8XbK7A2.../exec';
+    var HARDCODED_WEB_APP_URL = ''; 
+
+    // MENU DATA array
+    var MENU_ITEMS = [
+      { id: 'gula-aren', name: 'Kopi Susu Gula Aren', price: 22000, img: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=200&h=200&fit=crop&q=80' },
+      { id: 'americano', name: 'Kopi Americano', price: 18000, img: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefda?w=200&h=200&fit=crop&q=80' },
+      { id: 'coklat', name: 'Coklat', price: 20000, img: 'https://images.unsplash.com/photo-1542990253-0d0f5be5f0ed?w=200&h=200&fit=crop&q=80' },
+      { id: 'matcha', name: 'Matcha', price: 24000, img: 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=200&h=200&fit=crop&q=80' }
+    ];
+
+    // Core States
+    var currentTheme = 'light';
+    var activePage = 'order';
+    var cartState = {}; // { id: qty }
+    var customItemsList = [];
+    var editOrderId = null;
+    var historyCache = []; // Currently loaded history view page items
+    var currentStatusFilter = 'all';
+
+    // Lazy Paging variables as requested: display exactly 10 transactions initially
+    var lazyOffset = 0;
+    var lazyLimit = 10;
+    var lazyHasMore = false;
+    var lazyLoading = false;
+    var filterDateFrom = '';
+    var filterDateTo = '';
+
+    // ==========================================
+    // POLYFILL MOCK SIMULATION FOR GOOGLE APPS SCRIPT (IN-MEMORY PERSISTENCE ONLY)
+    // ==========================================
+    if (typeof google === 'undefined' || !google.script || !google.script.run) {
+      console.log("No Google Apps Script environment detected. Injecting clean, in-memory session database simulator...");
+      
+      // Clear legacy database mockup from localStorage for a clean environment as requested
+      try {
+        localStorage.removeItem('kopi_pos_orders');
+      } catch (e) {}
+      
+      // Initialize zero-persistence in-memory orders list for preview mode
+      if (!window.tempSessionOrders) {
+        window.tempSessionOrders = [
+          { orderId: 'ORD-20260613-162000', tanggal: '2026-06-13', waktu: '16:20:00', items: 'Kopi Susu Gula Aren x2, Matcha x1', totalQty: '3', total: 68000, paymentMethod: 'QRIS', status: 'Lunas', note: 'Meja 5' },
+          { orderId: 'ORD-20260613-141200', tanggal: '2026-06-13', waktu: '14:12:00', items: 'Kopi Americano x2, Coklat x1', totalQty: '3', total: 56000, paymentMethod: 'Cash', status: 'Lunas', note: 'Takeaway' },
+          { orderId: 'ORD-20260613-100500', tanggal: '2026-06-13', waktu: '10:05:00', items: 'Matcha x2, Bakwan Goreng x4', totalQty: '6', total: 88000, paymentMethod: 'QRIS', status: 'Belum Bayar', note: 'Samping Kasir' },
+          { orderId: 'ORD-20260612-194412', tanggal: '2026-06-12', waktu: '19:44:12', items: 'Matcha x3, Kopi Americano x2', totalQty: '5', total: 108000, paymentMethod: 'QRIS', status: 'Lunas', note: 'Meja 2' },
+          { orderId: 'ORD-20260612-152000', tanggal: '2026-06-12', waktu: '15:20:00', items: 'Coklat x2', totalQty: '2', total: 40000, paymentMethod: 'QRIS', status: 'Lunas', note: 'Teras Depan' },
+          { orderId: 'ORD-20260612-111005', tanggal: '2026-06-12', waktu: '11:10:05', items: 'Kopi Susu Gula Aren x1, Coklat x1', totalQty: '2', total: 42000, paymentMethod: 'Cash', status: 'Belum Bayar', note: 'Pak Budi' },
+          { orderId: 'ORD-20260611-142010', tanggal: '2026-06-11', waktu: '14:20:10', items: 'Matcha x2', totalQty: '2', total: 48000, paymentMethod: 'QRIS', status: 'Lunas', note: 'Meja 1' },
+          { orderId: 'ORD-20260611-120000', tanggal: '2026-06-11', waktu: '12:00:00', items: 'Kopi Americano x2', totalQty: '2', total: 36000, paymentMethod: 'Cash', status: 'Lunas', note: 'Take-out' },
+          { orderId: 'ORD-20260611-081015', tanggal: '2026-06-11', waktu: '08:10:15', items: 'Kopi Susu Gula Aren x3, Coklat x2', totalQty: '5', total: 106000, paymentMethod: 'QRIS', status: 'Lunas', note: 'Gojek' },
+          { orderId: 'ORD-20260610-171500', tanggal: '2026-06-10', waktu: '17:15:00', items: 'Kopi Americano x1, Matcha x1', totalQty: '2', total: 42000, paymentMethod: 'Cash', status: 'Lunas', note: 'Meja Indoor' },
+          { orderId: 'ORD-20260610-153022', tanggal: '2026-06-10', waktu: '15:30:22', items: 'Coklat x4', totalQty: '4', total: 80000, paymentMethod: 'QRIS', status: 'Lunas', note: 'GrabFood' },
+          { orderId: 'ORD-20260610-100511', tanggal: '2026-06-10', waktu: '10:05:11', items: 'Kopi Susu Gula Aren x2', totalQty: '2', total: 44000, paymentMethod: 'Cash', status: 'Belum Bayar', note: 'Meja 7' }
+        ];
+      }
+ 
+      var mockGAS = {
+        _successHandler: null,
+        _failureHandler: null,
+        withSuccessHandler: function(h) { this._successHandler = h; return this; },
+        withFailureHandler: function(h) { this._failureHandler = h; return this; },
+        
+        getTodayDate: function() {
+          var self = this;
+          setTimeout(function() {
+            var d = new Date();
+            var str = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            if (self._successHandler) self._successHandler(str);
+          }, 150);
+        },
+ 
+        submitOrder: function(data) {
+          var self = this;
+          setTimeout(function() {
+            try {
+              var d = new Date();
+              var padDate = function(n) { return String(n).padStart(2, '0'); };
+              var orderId = 'ORD-' + d.getFullYear() + padDate(d.getMonth() + 1) + padDate(d.getDate()) + '-' + padDate(d.getHours()) + padDate(d.getMinutes()) + padDate(d.getSeconds());
+              var tanggal = d.getFullYear() + '-' + padDate(d.getMonth() + 1) + '-' + padDate(d.getDate());
+              var waktu = padDate(d.getHours()) + ':' + padDate(d.getMinutes()) + ':' + padDate(d.getSeconds());
+ 
+              var itemStrings = data.items.map(function(item) { return item.name + ' x' + item.qty; });
+              var itemsFormatted = itemStrings.join(', ');
+              var totalQty = data.items.reduce(function(sum, item) { return sum + Number(item.qty); }, 0);
+ 
+              var newObj = {
+                orderId: orderId,
+                tanggal: tanggal,
+                waktu: waktu,
+                items: itemsFormatted,
+                totalQty: String(totalQty),
+                total: Number(data.total),
+                paymentMethod: data.pay,
+                status: data.status,
+                note: data.note || ''
+              };
+ 
+              // Write to in-memory array
+              window.tempSessionOrders.push(newObj);
+ 
+              if (self._successHandler) self._successHandler({ success: true, orderId: orderId });
+            } catch(e) {
+              if (self._failureHandler) self._failureHandler(e);
+            }
+          }, 500);
+        },
+ 
+        getAllOrders: function(offset, limit, statusFilter) {
+          var self = this;
+          setTimeout(function() {
+            try {
+              var all = window.tempSessionOrders || [];
+              self._processMockPagination(all, offset, limit, statusFilter);
+            } catch (err) {
+              if (self._failureHandler) self._failureHandler(err);
+            }
+          }, 350);
+        },
+ 
+        getOrdersByRange: function(dateFrom, dateTo, offset, limit, statusFilter) {
+          var self = this;
+          setTimeout(function() {
+            try {
+              var all = window.tempSessionOrders || [];
+              var dateFiltered = all.filter(function(o) {
+                if (dateFrom && o.tanggal < dateFrom) return false;
+                if (dateTo && o.tanggal > dateTo) return false;
+                return true;
+              });
+              self._processMockPagination(dateFiltered, offset, limit, statusFilter);
+            } catch (err) {
+              if (self._failureHandler) self._failureHandler(err);
+            }
+          }, 350);
+        },
+ 
+        _processMockPagination: function(recordsArr, offset, limit, statusFilter) {
+          recordsArr.sort(function(a, b) { return b.orderId.localeCompare(a.orderId); });
+ 
+          var totalRevenue = 0, totalCash = 0, totalQris = 0, totalCount = recordsArr.length;
+          var qty = {};
+ 
+          recordsArr.forEach(function(o) {
+            totalRevenue += Number(o.total || 0);
+            if (o.paymentMethod === 'QRIS') {
+              totalQris += Number(o.total || 0);
+            } else {
+              totalCash += Number(o.total || 0);
+            }
+ 
+            var itemsStr = o.items || '';
+            itemsStr.split(', ').forEach(function(p) {
+              var parts = p.split(' x');
+              if (parts.length === 2) {
+                var name = parts[0].trim();
+                var count = parseInt(parts[1], 10) || 0;
+                qty[name] = (qty[name] || 0) + count;
+              }
+            });
+          });
+ 
+          var best = null, maxCount = 0;
+          for (var k in qty) {
+            if (qty[k] > maxCount) {
+              maxCount = qty[k];
+              best = { name: k, qty: qty[k] };
+            }
+          }
+ 
+          var filtered = recordsArr;
+          if (statusFilter !== 'all') {
+            filtered = recordsArr.filter(function(o) { return o.status === statusFilter; });
+          }
+ 
+          var filteredCount = filtered.length;
+          var sli = filtered.slice(offset, offset + limit);
+          var hasMore = (offset + limit) < filteredCount;
+ 
+          if (this._successHandler) {
+            this._successHandler({
+              success: true,
+              orders: sli,
+              offset: offset,
+              limit: limit,
+              hasMore: hasMore,
+              filteredCount: filteredCount,
+              totalRevenue: totalRevenue,
+              totalCash: totalCash,
+              totalQris: totalQris,
+              totalCount: totalCount,
+              bestSeller: best
+            });
+          }
+        },
+ 
+        updateOrderMeta: function(oid, status, payMethod) {
+          var self = this;
+          setTimeout(function() {
+            var all = window.tempSessionOrders || [];
+            var ok = false;
+            for (var i = 0; i < all.length; i++) {
+              if (all[i].orderId === oid) {
+                all[i].status = status;
+                all[i].paymentMethod = payMethod;
+                ok = true;
+                break;
+              }
+            }
+            if (self._successHandler) self._successHandler({ success: ok });
+          }, 200);
+        },
+ 
+        deleteOrder: function(oid) {
+          var self = this;
+          setTimeout(function() {
+            var all = window.tempSessionOrders || [];
+            var initLen = all.length;
+            var filtered = all.filter(function(o) { return o.orderId !== oid; });
+            window.tempSessionOrders = filtered;
+            if (self._successHandler) self._successHandler({ success: filtered.length < initLen });
+          }, 200);
+        }
+      };
+ 
+      window.google = {
+        script: {
+          run: mockGAS
+        }
+      };
+    }
+
+    // ==========================================
+    // UNIFIED GOOGLE APPS SCRIPT PROXY (FOR FETCH & STANDALONE VERCEL RUNS)
+    // ==========================================
+    // Backup native google script run if present
+    var nativeGAS = null;
+    if (typeof google !== 'undefined' && google.script && google.script.run && window.location.hostname === 'script.google.com') {
+      nativeGAS = google.script.run;
+    }
+
+    var gasRunner = {
+      _success: null,
+      _failure: null,
+      withSuccessHandler: function(h) { this._success = h; return this; },
+      withFailureHandler: function(f) { this._failure = f; return this; },
+      
+      _callApi: function(action, argsArray) {
+        var self = this;
+        var successCb = self._success || function() {};
+        var failureCb = self._failure || function(err) { console.error(err); };
+        
+        // Reset handlers for next chain call
+        self._success = null;
+        self._failure = null;
+        
+        var webAppUrl = (typeof HARDCODED_WEB_APP_URL !== 'undefined' && HARDCODED_WEB_APP_URL) ? HARDCODED_WEB_APP_URL : (localStorage.getItem('kopi_web_app_url') || '');
+        if (webAppUrl) {
+          webAppUrl = webAppUrl.trim();
+        }
+        
+        if (webAppUrl) {
+          // Use dynamic JSONP callback to 100% bypass browser CORS limits, redirect issues, and sandboxed iframes
+          var callbackName = 'gasp_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
+          
+          window[callbackName] = function(data) {
+            // Cleanup script tag and global function
+            try {
+              var el = document.getElementById(callbackName);
+              if (el) el.remove();
+              delete window[callbackName];
+            } catch (e) {}
+            
+            if (action === 'getTodayDate') {
+              successCb(typeof data === 'string' ? data : (data.todayDate || data));
+            } else {
+              successCb(data);
+            }
+          };
+          
+          // Safety timeout (20 seconds) to notify user and prevent infinite loading state
+          var timeoutId = setTimeout(function() {
+            if (window[callbackName]) {
+              try {
+                var el = document.getElementById(callbackName);
+                if (el) el.remove();
+                delete window[callbackName];
+              } catch (e) {}
+              // Hide any screen loader spinner in UI automatically
+              if (typeof hideScreenLoader === 'function') {
+                hideScreenLoader();
+              }
+              failureCb(new Error('Penyimpanan tertunda/timeout. Pastikan Spreadsheet ID sudah benar, Google Apps Script telah di-Deploy Ulang sebagai "Anyone", dan URL Web App Anda benar.'));
+            }
+          }, 20000);
+          
+          // Wrap success to clear safety timeout
+          var originalSuccess = successCb;
+          successCb = function(res) {
+            clearTimeout(timeoutId);
+            originalSuccess(res);
+          };
+          
+          // Wrap failure to clear safety timeout
+          var originalFailure = failureCb;
+          failureCb = function(err) {
+            clearTimeout(timeoutId);
+            originalFailure(err);
+          };
+          
+          // Build Query Parameters
+          var queryParams = [];
+          queryParams.push('action=' + encodeURIComponent(action));
+          queryParams.push('callback=' + encodeURIComponent(callbackName));
+          
+          if (action === 'getTodayDate') {
+            // No extra parameters
+          } else if (action === 'submitOrder') {
+            queryParams.push('data=' + encodeURIComponent(JSON.stringify(argsArray[0])));
+          } else if (action === 'updateOrderMeta') {
+            queryParams.push('orderId=' + encodeURIComponent(argsArray[0]));
+            queryParams.push('status=' + encodeURIComponent(argsArray[1]));
+            queryParams.push('paymentMethod=' + encodeURIComponent(argsArray[2]));
+          } else if (action === 'deleteOrder') {
+            queryParams.push('orderId=' + encodeURIComponent(argsArray[0]));
+          } else if (action === 'getAllOrders') {
+            queryParams.push('offset=' + encodeURIComponent(argsArray[0] || 0));
+            queryParams.push('limit=' + encodeURIComponent(argsArray[1] || 10));
+            queryParams.push('statusFilter=' + encodeURIComponent(argsArray[2] || 'all'));
+          } else if (action === 'getOrdersByRange') {
+            queryParams.push('dateFrom=' + encodeURIComponent(argsArray[0] || ''));
+            queryParams.push('dateTo=' + encodeURIComponent(argsArray[1] || ''));
+            queryParams.push('offset=' + encodeURIComponent(argsArray[2] || 0));
+            queryParams.push('limit=' + encodeURIComponent(argsArray[3] || 10));
+            queryParams.push('statusFilter=' + encodeURIComponent(argsArray[4] || 'all'));
+          }
+          
+          var separator = webAppUrl.indexOf('?') !== -1 ? '&' : '?';
+          var finalUrl = webAppUrl + separator + queryParams.join('&');
+          
+          var scriptEl = document.createElement('script');
+          scriptEl.id = callbackName;
+          scriptEl.src = finalUrl;
+          scriptEl.onerror = function(err) {
+            clearTimeout(timeoutId);
+            try {
+              var el = document.getElementById(callbackName);
+              if (el) el.remove();
+              delete window[callbackName];
+            } catch (e) {}
+            if (typeof hideScreenLoader === 'function') {
+              hideScreenLoader();
+            }
+            failureCb(new Error('Gagal menghubungi Web App. Pastikan URL benar, spreadsheet memiliki akses yang dibagikan, dan Apps Script di-Deploy sebagai "Anyone".'));
+          };
+          
+          document.body.appendChild(scriptEl);
+          
+        } else {
+          // No Web App URL defined, check if we have native Google Script environment
+          if (nativeGAS) {
+            var nativeRunner = nativeGAS.withSuccessHandler(successCb).withFailureHandler(failureCb);
+            nativeRunner[action].apply(nativeRunner, argsArray);
+          } else {
+            // Fallback to local LocalStorage Simulator mockGAS
+            var localSim = mockGAS.withSuccessHandler(successCb).withFailureHandler(failureCb);
+            localSim[action].apply(localSim, argsArray);
+          }
+        }
+      },
+      
+      getTodayDate: function() { this._callApi('getTodayDate', arguments); },
+      submitOrder: function() { this._callApi('submitOrder', arguments); },
+      getAllOrders: function() { this._callApi('getAllOrders', arguments); },
+      getOrdersByRange: function() { this._callApi('getOrdersByRange', arguments); },
+      updateOrderMeta: function() { this._callApi('updateOrderMeta', arguments); },
+      deleteOrder: function() { this._callApi('deleteOrder', arguments); }
+    };
+
+    window.google = {
+      script: {
+        run: gasRunner
+      }
+    };
+
+    // ==========================================
+    // STANDALONE WEB CONFIGURATION FUNCTIONS
+    // ==========================================
+    function initWebAppSetting() {
+      var savedUrl = localStorage.getItem('kopi_web_app_url') || '';
+      var input = document.getElementById('webAppUrlInput');
+      if (input) {
+        input.value = savedUrl;
+      }
+      updateWebAppStatus();
+    }
+
+    function saveWebAppUrl() {
+      var input = document.getElementById('webAppUrlInput');
+      if (!input) return;
+      var url = input.value.trim();
+      if (url) {
+        localStorage.setItem('kopi_web_app_url', url);
+      } else {
+        localStorage.removeItem('kopi_web_app_url');
+      }
+      updateWebAppStatus();
+      
+      // Force reload the orders with the new connection
+      historyCache = [];
+      lazyOffset = 0;
+      fetchOrders(true);
+    }
+
+    function clearWebAppUrl() {
+      var input = document.getElementById('webAppUrlInput');
+      if (input) {
+        input.value = '';
+      }
+      localStorage.removeItem('kopi_web_app_url');
+      updateWebAppStatus();
+      toast('Koneksi Web App dinonaktifkan. Kembali ke simulator lokal!', 'success');
+      
+      // Force reload the orders with local mock
+      historyCache = [];
+      lazyOffset = 0;
+      fetchOrders(true);
+    }
+
+    function updateWebAppStatus() {
+      var isHardcoded = (typeof HARDCODED_WEB_APP_URL !== 'undefined' && HARDCODED_WEB_APP_URL);
+      var url = isHardcoded ? HARDCODED_WEB_APP_URL : (localStorage.getItem('kopi_web_app_url') || '');
+      var statusEl = document.getElementById('webAppUrlStatus');
+      if (!statusEl) return;
+      
+      if (url) {
+        if (!url.startsWith('https://script.google.com/')) {
+          statusEl.innerHTML = `
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+            <span class="text-amber-600 dark:text-amber-400 font-bold">⚠️ URL tidak valid (harus Google Script URL)</span>
+          `;
+        } else {
+          statusEl.innerHTML = `
+            <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+            <span class="text-blue-600 dark:text-blue-400 font-extrabold flex items-center gap-1">
+              <span class="material-icons-round text-xs">cloud_done</span>
+              Terhubung ke Spreadsheet ${isHardcoded ? '(Hardcoded)' : 'Web App'}
+            </span>
+          `;
+        }
+      } else {
+        statusEl.innerHTML = `
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="text-zinc-400 font-semibold">● Menggunakan Local Simulator (Offline Mode)</span>
+        `;
+      }
+    }
+
+    // ==========================================
+    // INITIALIZATION AND EVENT LISTENERS
+    // ==========================================
+    document.addEventListener('DOMContentLoaded', function() {
+      // Setup dynamic Header date
+      renderHeroDate();
+      
+      // Inject standard menu elements
+      renderMenuCards();
+      
+      // Load saved app-theme state
+      var initialTheme = localStorage.getItem('kopi_pos_theme') || 'light';
+      if (initialTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+        document.getElementById('themeIcon').textContent = 'dark_mode';
+        currentTheme = 'dark';
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.getElementById('themeIcon').textContent = 'light_mode';
+        currentTheme = 'light';
+      }
+
+      // Read static spreadsheet instructions into collapsibles
+      loadCodeOnDetails();
+
+      // Initialize any saved Web App connection URL settings
+      initWebAppSetting();
+
+      // Set initial Date inputs according to server today's date
+      google.script.run                .withSuccessHandler(function(todayStr) {
+                  document.getElementById('dateFrom').value = todayStr;
+                  document.getElementById('dateTo').value = todayStr;
+                  filterDateFrom = todayStr;
+                  filterDateTo = todayStr;
+                })
+                .withFailureHandler(function() {
+                  var localYesterdayStr = getRelativeDateStr(0);
+                  document.getElementById('dateFrom').value = localYesterdayStr;
+                  document.getElementById('dateTo').value = localYesterdayStr;
+                  filterDateFrom = localYesterdayStr;
+                  filterDateTo = localYesterdayStr;
+                })
+                .getTodayDate();
+    });
+
+    function getRelativeDateStr(offsetDays) {
+      var d = new Date();
+      d.setDate(d.getDate() + offsetDays);
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    function renderHeroDate() {
+      var days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      var months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+      var d = new Date();
+      document.getElementById('heroDate').textContent = days[d.getDay()] + ', ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+    }
+
+    function toggleTheme() {
+      if (currentTheme === 'light') {
+        document.documentElement.classList.add('dark');
+        document.getElementById('themeIcon').textContent = 'dark_mode';
+        currentTheme = 'dark';
+        localStorage.setItem('kopi_pos_theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.getElementById('themeIcon').textContent = 'light_mode';
+        currentTheme = 'light';
+        localStorage.setItem('kopi_pos_theme', 'light');
+      }
+    }
+
+    // ==========================================
+    // MENU CARDS & STEPPER ACTIONS
+    // ==========================================
+    function renderMenuCards() {
+      var grid = document.getElementById('menuGrid');
+      grid.innerHTML = MENU_ITEMS.map(function(item) {
+        var qty = cartState[item.id] || 0;
+        var selectedClass = qty > 0 
+          ? 'border-coffee-600/60 dark:border-coffee-500/50 shadow-xs bg-zinc-50/10 dark:bg-zinc-850/5' 
+          : 'border-zinc-200/80 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-750';
+        
+        return `
+          <div id="card-${item.id}" class="relative flex flex-col bg-white dark:bg-zinc-900 border rounded-xl p-1.5 justify-between transition-all shadow-xs ${selectedClass}">
+            <img src="${item.img}" alt="${item.name}" class="w-[60%] mx-auto aspect-square rounded-lg object-cover bg-zinc-100 border border-zinc-200/40 dark:border-zinc-800 mt-1" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2264%22><rect width=%2264%22 height=%2264%22 fill=%22%23eee%22/><text x=%2232%22 y=%2238%22 text-anchor=%22middle%22 font-size=%2228%22>☕</text></svg>'">
+            
+            <!-- Info left-aligned like attachment -->
+            <div class="px-0.5 mt-1 flex-1 flex flex-col justify-start">
+              <h3 class="font-semibold text-[11px] leading-tight text-zinc-800 dark:text-zinc-200 line-clamp-2">
+                ${item.name}
+              </h3>
+              <p class="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium mt-0.5">
+                ${formatRp(item.price)}
+              </p>
+            </div>
+
+            <!-- Counter Stepper controller with neutral theme buttons -->
+            <div class="flex items-center justify-between w-full mt-1.5 px-0.5">
+              <button onclick="changeQty('${item.id}', -1)" class="w-7 h-7 rounded-lg border border-zinc-200 dark:border-zinc-750 bg-zinc-50 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 flex items-center justify-center font-bold active:scale-90 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-all select-none cursor-pointer">
+                <span class="material-icons-round text-xs select-none">remove</span>
+              </button>
+              <span id="qty-val-${item.id}" class="text-xs font-bold text-zinc-800 dark:text-white min-w-[16px] text-center select-none">
+                ${qty}
+              </span>
+              <button onclick="changeQty('${item.id}', 1)" class="w-7 h-7 rounded-lg border border-zinc-200 dark:border-zinc-750 bg-zinc-50 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 flex items-center justify-center font-bold active:scale-90 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-all select-none cursor-pointer">
+                <span class="material-icons-round text-xs select-none">add</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function changeQty(id, delta) {
+      var current = cartState[id] || 0;
+      var next = Math.max(0, current + delta);
+      if (next === 0) {
+        delete cartState[id];
+      } else {
+        cartState[id] = next;
+      }
+      
+      // Update specific components in menu cards instantly for zero UI delays
+      var card = document.getElementById('card-' + id);
+      var qtyVal = document.getElementById('qty-val-' + id);
+
+      if (next > 0) {
+        card.className = "relative flex flex-col bg-white dark:bg-zinc-900 border rounded-xl p-1.5 justify-between transition-all shadow-xs border-coffee-600/60 dark:border-coffee-500/50 bg-zinc-50/10 dark:bg-zinc-850/5";
+      } else {
+        card.className = "relative flex flex-col bg-white dark:bg-zinc-900 border rounded-xl p-1.5 justify-between transition-all shadow-xs border-zinc-200/80 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-750";
+      }
+      qtyVal.textContent = next;
+
+      updateFabButton();
+      if (document.getElementById('cartSheet').style.display !== 'none') {
+        renderSheetItems();
+      }
+    }
+
+    function updateFabButton() {
+      var fab = document.getElementById('fabCart');
+      var bubble = document.getElementById('fabCount');
+      
+      // Calculate overall items in basket
+      var totalQty = 0;
+      MENU_ITEMS.forEach(function(m) {
+        totalQty += (cartState[m.id] || 0);
+      });
+      customItemsList.forEach(function(c) {
+        totalQty += Number(c.qty || 1);
+      });
+
+      bubble.textContent = totalQty;
+      if (totalQty > 0) {
+        fab.classList.remove('scale-0', 'pointer-events-none');
+        fab.classList.add('scale-100', 'pointer-events-auto');
+      } else {
+        fab.classList.remove('scale-100', 'pointer-events-auto');
+        fab.classList.add('scale-0', 'pointer-events-none');
+      }
+    }
+
+    // ==========================================
+    // CUSTOM ORDER FORMS
+    // ==========================================
+    function formatCustomPriceInput(el) {
+      var raw = el.value.replace(/[^0-9]/g, '');
+      if (!raw) {
+        el.value = '';
+        return;
+      }
+      el.value = Number(raw).toLocaleString('id-ID');
+    }
+
+    function addCustom() {
+      var name = document.getElementById('customName').value.trim();
+      var rawPrice = document.getElementById('customPrice').value.replace(/\./g, '');
+      var parsedPrice = parseInt(rawPrice, 10) || 0;
+
+      if (!name) {
+        toast('Nama item harus diisi lengkap!', 'error');
+        return;
+      }
+      if (parsedPrice <= 0) {
+        toast('Harga item tidak boleh kosong!', 'error');
+        return;
+      }
+
+      var customId = 'custom-' + Date.now();
+      var customObj = {
+        id: customId,
+        name: name,
+        price: parsedPrice,
+        qty: 1,
+        isCustom: true
+      };
+
+      customItemsList.push(customObj);
+      document.getElementById('customName').value = '';
+      document.getElementById('customPrice').value = '';
+
+      updateFabButton();
+      toast(name + ' ditambahkan dalam keranjang!', 'success');
+      
+      // Auto open checkout summary
+      openSheet();
+    }
+
+    function removeCustom(id) {
+      customItemsList = customItemsList.filter(function(i) { return i.id !== id; });
+      updateFabButton();
+      renderSheetItems();
+      toast('Custom item berhasil dihapus!', 'success');
+    }
+
+    // ==========================================
+    // SHEET DRAWER CONTROLLER
+    // ==========================================
+    function openSheet() {
+      renderSheetItems();
+      document.getElementById('sheetOverlay').classList.remove('hidden');
+      
+      var s = document.getElementById('cartSheet');
+      s.classList.remove('hidden');
+      s.style.display = 'flex';
+      s.classList.add('anim-slide-up');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeSheet() {
+      document.getElementById('sheetOverlay').classList.add('hidden');
+      document.getElementById('cartSheet').style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
+    function renderSheetItems() {
+      var body = document.getElementById('sheetBody');
+      var footer = document.getElementById('sheetFooter');
+      
+      // Get array lists of all selected items
+      var items = [];
+      MENU_ITEMS.forEach(function(m) {
+        var count = cartState[m.id] || 0;
+        if (count > 0) {
+          items.push({ id: m.id, name: m.name, price: m.price, img: m.img, qty: count, isCustom: false });
+        }
+      });
+      customItemsList.forEach(function(c) {
+        items.push(c);
+      });
+
+      if (items.length === 0) {
+        body.innerHTML = `
+          <div class="py-14 text-center text-zinc-400">
+            <span class="material-icons-round text-4xl opacity-25 mb-2">shopping_cart</span>
+            <p class="text-xs">Keranjang Anda masih kosong</p>
+          </div>
+        `;
+        footer.style.display = 'none';
+        return;
+      }
+
+      var overallTotal = 0;
+      body.innerHTML = items.map(function(item) {
+        var subTotal = item.price * item.qty;
+        overallTotal += subTotal;
+
+        var imgHTML = item.img 
+          ? `<img src="${item.img}" class="w-10 h-10 object-cover rounded-lg shrink-0 border border-zinc-150">`
+          : `<div class="w-10 h-10 rounded-lg bg-coffee-100 text-coffee-700 font-bold flex items-center justify-center shrink-0">☕</div>`;
+        
+        var actionButton = item.isCustom
+          ? `<button onclick="removeCustom('${item.id}')" class="p-1 px-1.5 hover:bg-rose-50 text-rose-500 rounded-md shrink-0"><span class="material-icons-round text-base">close</span></button>`
+          : ``;
+
+        return `
+          <div class="flex items-center gap-3 pt-3 pb-1">
+            ${imgHTML}
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-bold text-zinc-800 dark:text-zinc-100 leading-snug break-words">${item.name}</p>
+              <p class="text-[11px] text-zinc-400 dark:text-zinc-500 leading-none mt-1">x${item.qty} · ${formatRp(item.price)}</p>
+            </div>
+            <div class="text-right flex items-center gap-2">
+              <span class="text-xs font-extrabold text-coffee-600 dark:text-coffee-400">${formatRp(subTotal)}</span>
+              ${actionButton}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('sheetTotal').textContent = formatRp(overallTotal);
+      footer.style.display = 'block';
+    }
+
+    function clearCart() {
+      cartState = {};
+      customItemsList = [];
+      renderMenuCards();
+      updateFabButton();
+      closeSheet();
+      toast('Seluruh isi keranjang dikosongkan', 'success');
+    }
+
+    // ==========================================
+    // SAVE TRANSACTION PROCESS (submitOrder API)
+    // ==========================================
+    function submitOrder() {
+      // Gather active list items
+      var formattedItems = [];
+      MENU_ITEMS.forEach(function(m) {
+        var q = cartState[m.id] || 0;
+        if (q > 0) {
+          formattedItems.push({ name: m.name, qty: q, price: m.price });
+        }
+      });
+      customItemsList.forEach(function(c) {
+        formattedItems.push({ name: c.name, qty: c.qty, price: c.price });
+      });
+
+      if (formattedItems.length === 0) return;
+
+      var total = formattedItems.reduce(function(sum, i) { return sum + (i.price * i.qty); }, 0);
+      var payload = {
+        items: formattedItems,
+        total: total,
+        pay: document.getElementById('payMethod').value,
+        status: document.getElementById('payStatus').value,
+        note: document.getElementById('orderNote').value
+      };
+
+      closeSheet();
+      showScreenLoader('Menyimpan pesanan ke Spreadsheet...');
+
+      google.script.run
+        .withSuccessHandler(function(response) {
+          hideScreenLoader();
+          if (response.success) {
+            // Clean state
+            cartState = {};
+            customItemsList = [];
+            document.getElementById('orderNote').value = '';
+            document.getElementById('payMethod').value = 'QRIS';
+            document.getElementById('payStatus').value = 'Belum Bayar';
+
+            renderMenuCards();
+            updateFabButton();
+
+            // Open success visual dialog
+            document.getElementById('successOid').textContent = response.orderId;
+            var succModal = document.getElementById('successModal');
+            succModal.classList.remove('hidden');
+            succModal.classList.add('flex');
+            
+            // clear local history caches to force fetch updates on Riwayat screen
+            historyCache = [];
+            lazyOffset = 0;
+          } else {
+            toast('Simpan order gagal: ' + (response.message || 'Error'), 'error');
+          }
+        })
+        .withFailureHandler(function(err) {
+          hideScreenLoader();
+          toast('Error: ' + (err.message || err), 'error');
+        })
+        .submitOrder(payload);
+    }
+
+    function closeSuccess() {
+      document.getElementById('successModal').classList.add('hidden');
+      document.getElementById('successModal').classList.remove('flex');
+    }
+
+    // ==========================================
+    // HISTORY LOG: RANGE & STATUS CARDS (getAllOrders/getOrdersByRange)
+    // ==========================================
+    function setRange(mode) {
+      // Deactivate all range filter chips
+      document.querySelectorAll('.preset-chip').forEach(function(btn) {
+        btn.className = "preset-chip shrink-0 px-4 py-2 text-xs font-extrabold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 snap-start transition-all";
+      });
+
+      var todayStr = getRelativeDateStr(0);
+      var fromInput = document.getElementById('dateFrom');
+      var toInput = document.getElementById('dateTo');
+
+      if (mode === 'today') {
+        fromInput.value = todayStr;
+        toInput.value = todayStr;
+        document.getElementById('preset-today').className = "preset-chip shrink-0 px-4 py-2 text-xs font-extrabold rounded-xl border border-coffee-200 bg-coffee-100 text-coffee-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300 shadow-xs snap-start transition-all";
+      } else if (mode === 'yesterday') {
+        var yest = getRelativeDateStr(-1);
+        fromInput.value = yest;
+        toInput.value = yest;
+        document.getElementById('preset-yesterday').className = "preset-chip shrink-0 px-4 py-2 text-xs font-extrabold rounded-xl border border-coffee-200 bg-coffee-100 text-coffee-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300 shadow-xs snap-start transition-all";
+      } else if (mode === '7d') {
+        var wAgo = getRelativeDateStr(-6);
+        fromInput.value = wAgo;
+        toInput.value = todayStr;
+        document.getElementById('preset-7d').className = "preset-chip shrink-0 px-4 py-2 text-xs font-extrabold rounded-xl border border-coffee-200 bg-coffee-100 text-coffee-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300 shadow-xs snap-start transition-all";
+      } else if (mode === '14d') {
+        var fAgo = getRelativeDateStr(-13);
+        fromInput.value = fAgo;
+        toInput.value = todayStr;
+        document.getElementById('preset-14d').className = "preset-chip shrink-0 px-4 py-2 text-xs font-extrabold rounded-xl border border-coffee-200 bg-coffee-100 text-coffee-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300 shadow-xs snap-start transition-all";
+      } else if (mode === '30d') {
+        var mAgo = getRelativeDateStr(-29);
+        fromInput.value = mAgo;
+        toInput.value = todayStr;
+        document.getElementById('preset-30d').className = "preset-chip shrink-0 px-4 py-2 text-xs font-extrabold rounded-xl border border-coffee-200 bg-coffee-100 text-coffee-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300 shadow-xs snap-start transition-all";
+      }
+
+      filterDateFrom = fromInput.value;
+      filterDateTo = toInput.value;
+
+      // Force fetch the list fresh
+      historyCache = [];
+      lazyOffset = 0;
+      fetchOrders(true);
+    }
+
+    function refreshHistory() {
+      historyCache = [];
+      lazyOffset = 0;
+      showScreenLoader('Menyinkronkan data Google Spreadsheet...');
+      fetchOrders(true);
+    }
+
+    function filterStatus(status) {
+      currentStatusFilter = status;
+
+      // Highlight active sub-tab
+      document.querySelectorAll('#statusFilterWrap button').forEach(function(btn) {
+        btn.className = "status-tab px-3 py-1.5 text-[9.5px] font-black rounded-lg uppercase tracking-wider text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 transition-all";
+      });
+      
+      var targetTab = document.querySelector(`#statusFilterWrap button[data-tab="${status}"]`);
+      if (targetTab) {
+        targetTab.className = "status-tab px-3 py-1.5 text-[9.5px] font-black rounded-lg uppercase tracking-wider bg-coffee-100 text-coffee-800 dark:bg-zinc-800 dark:text-zinc-200 transition-all";
+      }
+
+      // Re-fetch since lazy loaded ranges differ per filter status
+      historyCache = [];
+      lazyOffset = 0;
+      fetchOrders(true);
+    }
+
+    // FETCH ORDERS WITH INTEGRATED LAZY PAGE (LIMIT & OFFSET) Slicing
+    function fetchOrders(isFirstLoad) {
+      if (lazyLoading) return;
+      lazyLoading = true;
+
+      if (isFirstLoad) {
+        document.getElementById('historyList').innerHTML = `
+          <div class="py-12 text-center text-zinc-400 text-xs">
+            <div class="w-7 h-7 rounded-full border-2 border-zinc-200 border-t-coffee-600 animate-spin mx-auto mb-3.5"></div>
+            Memuat transaksi Google Sheets...
+          </div>
+        `;
+        document.getElementById('historyEmpty').classList.add('hidden');
+        document.getElementById('loadMoreWrap').classList.add('hidden');
+      }
+
+      var cbSuccess = function(response) {
+        lazyLoading = false;
+        hideScreenLoader();
+
+        if (!response.success) {
+          toast(response.message || 'Membaca riwayat gagal', 'error');
+          return;
+        }
+
+        // Fill Stats
+        document.getElementById('stRevenue').textContent = formatRp(response.totalRevenue || 0);
+        document.getElementById('stCount').textContent = response.totalCount || 0;
+        document.getElementById('stCash').textContent = formatRp(response.totalCash || 0);
+        document.getElementById('stQris').textContent = formatRp(response.totalQris || 0);
+        
+        var best = response.bestSeller;
+        if (best) {
+          document.getElementById('stBestName').textContent = best.name;
+          document.getElementById('stBestQty').textContent = best.qty + ' Terjual';
+        } else {
+          document.getElementById('stBestName').textContent = '-';
+          document.getElementById('stBestQty').textContent = '0 Terjual';
+        }
+
+        document.getElementById('statusTotalValue').textContent = response.filteredCount || 0;
+
+        // Append sliced listings
+        if (isFirstLoad) {
+          historyCache = response.orders || [];
+        } else {
+          historyCache = historyCache.concat(response.orders || []);
+        }
+
+        lazyOffset = historyCache.length;
+        lazyHasMore = response.hasMore;
+
+        renderHistoryCards();
+      };
+
+      var cbError = function(err) {
+        lazyLoading = false;
+        hideScreenLoader();
+        toast('Connection Error: ' + (err.message || err), 'error');
+      };
+
+      // Call Spreadsheet Backend depending on filters
+      if (filterDateFrom || filterDateTo) {
+        google.script.run
+          .withSuccessHandler(cbSuccess)
+          .withFailureHandler(cbError)
+          .getOrdersByRange(filterDateFrom, filterDateTo, lazyOffset, lazyLimit, currentStatusFilter);
+      } else {
+        google.script.run
+          .withSuccessHandler(cbSuccess)
+          .withFailureHandler(cbError)
+          .getAllOrders(lazyOffset, lazyLimit, currentStatusFilter);
+      }
+    }
+
+    function renderHistoryCards() {
+      var list = document.getElementById('historyList');
+      var emp = document.getElementById('historyEmpty');
+      var loadMoreBtn = document.getElementById('loadMoreWrap');
+
+      if (historyCache.length === 0) {
+        list.innerHTML = '';
+        emp.classList.remove('hidden');
+        loadMoreBtn.classList.add('hidden');
+        return;
+      }
+
+      emp.classList.add('hidden');
+      if (lazyHasMore) {
+        loadMoreBtn.classList.remove('hidden');
+      } else {
+        loadMoreBtn.classList.add('hidden');
+      }
+
+      list.innerHTML = historyCache.map(function(o) {
+        var isQris = o.paymentMethod === 'QRIS';
+        var payTag = isQris 
+          ? `<span class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400 font-bold text-[10px]">QRIS</span>`
+          : `<span class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-600 dark:bg-green-950/30 dark:text-green-400 font-bold text-[10px]">Cash</span>`;
+
+        var isLunas = o.status === 'Lunas';
+        var statusTag = isLunas
+          ? `<span class="px-2 py-0.5 rounded-md bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 font-bold text-[10px]">Lunas</span>`
+          : `<span class="px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-450 font-bold text-[10px]">Belum Bayar</span>`;
+
+        var noteBadge = o.note
+          ? `<p class="text-[11px] text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/80 p-2 rounded-xl mt-2 flex items-center gap-1"><span class="material-icons-round text-sm" style="font-size:13px">sticky_note_2</span>${o.note}</p>`
+          : ``;
+
+        return `
+          <div class="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800/80 p-4 rounded-2xl shadow-xs relative anim-fade-in block">
+            
+            <div class="flex justify-between items-start gap-4 mb-2">
+              <div>
+                <p class="font-extrabold text-[11px] text-coffee-600 font-mono tracking-wider leading-none">${o.orderId}</p>
+                <p class="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1">${o.tanggal} · ${o.waktu}</p>
+              </div>
+              <button onclick="openEdit('${o.orderId}')" class="w-8 h-8 rounded-lg bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800/50 dark:hover:bg-zinc-700 text-zinc-400 hover:text-coffee-600 flex items-center justify-center shrink-0 border border-zinc-100 dark:border-zinc-800 pointer-events-auto">
+                <span class="material-icons-round text-sm">edit</span>
+              </button>
+            </div>
+
+            <div class="py-1">
+              <p class="text-xs font-bold text-zinc-700 dark:text-zinc-300 leading-relaxed">${o.items}</p>
+              <p class="text-[10px] text-zinc-400 mt-0.5">${o.totalQty || 0} item dalam pesanan</p>
+            </div>
+
+            <div class="flex justify-between items-center mt-3 pt-2.5 border-t border-zinc-50 dark:border-zinc-800">
+              <span class="text-sm font-black text-emerald-600 dark:text-emerald-400">${formatRp(o.total)}</span>
+              <div class="flex gap-1.5 items-center">
+                ${payTag}
+                ${statusTag}
+              </div>
+            </div>
+
+            ${noteBadge}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ==========================================
+    // ACTION: EDIT ORDER & DELETE (updateOrderMeta API)
+    // ==========================================
+    function openEdit(id) {
+      editOrderId = id;
+      document.getElementById('editSubtitle').textContent = id;
+      
+      // Find row values in cache list
+      var rec = historyCache.find(function(it) { return it.orderId === id; });
+      if (rec) {
+        document.getElementById('editPayMethodSelect').value = rec.paymentMethod;
+        document.getElementById('editStatusSelect').value = rec.status;
+      }
+
+      var modal = document.getElementById('editModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeEdit() {
+      editOrderId = null;
+      var modal = document.getElementById('editModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function saveEdit() {
+      if (!editOrderId) return;
+      var status = document.getElementById('editStatusSelect').value;
+      var payMethod = document.getElementById('editPayMethodSelect').value;
+      var targetId = editOrderId;
+
+      closeEdit();
+      showScreenLoader('Mengubah status transaksi di Sheets...');
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          hideScreenLoader();
+          if (res.success) {
+            toast('Status transaksi berhasil diperbarui!', 'success');
+            // Refresh
+            historyCache = [];
+            lazyOffset = 0;
+            fetchOrders(true);
+          } else {
+            toast('Gagal mengupdate order!', 'error');
+          }
+        })
+        .withFailureHandler(function(err) {
+          hideScreenLoader();
+          toast('Error: ' + (err.message || err), 'error');
+        })
+        .updateOrderMeta(targetId, status, payMethod);
+    }
+
+    function deleteFromEdit() {
+      if (!editOrderId) return;
+      if (!confirm("Apakah Anda yakin ingin menghapus transaksi ini selamanya dari Sheets database?")) return;
+      
+      var targetId = editOrderId;
+      closeEdit();
+      showScreenLoader('Menghapus row data transaksi dari Spreadsheet...');
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          hideScreenLoader();
+          if (res.success) {
+            toast('Transaksi berhasil dihapus!', 'success');
+            // Refresh
+            historyCache = [];
+            lazyOffset = 0;
+            fetchOrders(true);
+          } else {
+            toast('Gagal menghapus order dari Sheets!', 'error');
+          }
+        })
+        .withFailureHandler(function(err) {
+          hideScreenLoader();
+          toast('Error: ' + (err.message || err), 'error');
+        })
+        .deleteOrder(targetId);
+    }
+
+    // ==========================================
+    // UTILITIES / HELPERS
+    // ==========================================
+    function formatRp(n) {
+      return 'Rp ' + Number(n).toLocaleString('id-ID');
+    }
+
+    function toast(text, type) {
+      var wrap = document.getElementById('toastWrap');
+      var container = document.createElement('div');
+      var icon = type === 'success' ? 'check_circle' : 'error';
+      var borderAccent = type === 'success' ? 'border-emerald-500' : 'border-rose-500';
+      var iconColor = type === 'success' ? 'text-emerald-500' : 'text-rose-500';
+
+      container.className = "pointer-events-auto flex items-center gap-3 bg-white dark:bg-zinc-900 border-l-4 " + borderAccent + " p-4 rounded-xl shadow-xl ring-1 ring-black/5 anim-slide-up";
+      container.innerHTML = `
+        <span class="material-icons-round text-lg shrink-0 ${iconColor}">${icon}</span>
+        <span class="text-xs font-semibold text-zinc-800 dark:text-zinc-200">${text}</span>
+      `;
+
+      wrap.appendChild(container);
+      setTimeout(function() {
+        container.style.opacity = '0';
+        container.style.transition = 'opacity 0.4s';
+      }, 2500);
+      setTimeout(function() {
+        container.remove();
+      }, 3000);
+    }
+
+    function showScreenLoader(msg) {
+      document.getElementById('loadingMsg').textContent = msg || 'Memproses pembayaran...';
+      document.getElementById('loadingWrap').classList.remove('hidden');
+      document.getElementById('loadingWrap').classList.add('flex');
+    }
+
+    function hideScreenLoader() {
+      document.getElementById('loadingWrap').classList.add('hidden');
+      document.getElementById('loadingWrap').classList.remove('flex');
+    }
+
+    function showPage(page) {
+      activePage = page;
+      
+      // Toggle views visibility
+      if (page === 'order') {
+        document.getElementById('pageOrder').classList.remove('hidden');
+        document.getElementById('pageHistory').classList.add('hidden');
+        
+        // Show Hero Banner only on order tab as requested
+        var banner = document.getElementById('heroBanner');
+        if (banner) banner.classList.remove('hidden');
+        
+        // Navigation active statuses
+        document.getElementById('navOrderBtn').className = "nav-btn flex-1 flex flex-col items-center justify-center text-coffee-600 dark:text-coffee-400 gap-0.5";
+        document.getElementById('navHistoryBtn').className = "nav-btn flex-1 flex flex-col items-center justify-center text-zinc-400 hover:text-zinc-650 dark:hover:text-zinc-200 gap-0.5";
+      } else {
+        document.getElementById('pageOrder').classList.add('hidden');
+        document.getElementById('pageHistory').classList.remove('hidden');
+        
+        // Hide Hero Banner on history tab as requested
+        var banner = document.getElementById('heroBanner');
+        if (banner) banner.classList.add('hidden');
+        
+        // Navigation active statuses
+        document.getElementById('navOrderBtn').className = "nav-btn flex-1 flex flex-col items-center justify-center text-zinc-400 hover:text-zinc-650 dark:hover:text-zinc-200 gap-0.5";
+        document.getElementById('navHistoryBtn').className = "nav-btn flex-1 flex flex-col items-center justify-center text-coffee-600 dark:text-coffee-400 gap-0.5";
+        
+        // Load history records automatically
+        fetchOrders(true);
+      }
+    }
+
+    function openSettings() {
+      document.getElementById('settingsModal').classList.remove('hidden');
+      document.getElementById('settingsModal').classList.add('flex');
+      loadCodeOnDetails();
+    }
+
+    function closeSettings() {
+      document.getElementById('settingsModal').classList.add('hidden');
+      document.getElementById('settingsModal').classList.remove('flex');
+    }
+
+    // ==========================================
+    // BACKEND CODE LOADER ON DETAILS
+    // ==========================================
+    function loadCodeOnDetails() {
+      var script = `/**
+ * code.gs - Google Apps Script Backend for Kopi Nusantara POS
+ * 
+ * Implements lazy-loaded paging pagination ("lazy page") for order lists,
+ * stats calculation, order submission, updates, and deletion.
+ * Supports native Apps Script direct calls as well as REST-like fetch API requests (CORS/JSONP friendly).
+ * 
+ * Author: awanhermawan78group@gmail.com
+ * License: Apache-2.0
+ */
+
+function doGet(e) {
+  // Check if JSONP callback is requested to bypass CORS completely
+  var callback = e && e.parameter && e.parameter.callback;
+
+  // If there's an action query parameter, act as an API endpoint (fetch GET / JSONP compatible)
+  if (e && e.parameter && e.parameter.action) {
+    try {
+      var action = e.parameter.action;
+      var responseData;
+      
+      if (action === 'getTodayDate') {
+        responseData = getTodayDate();
+      } else if (action === 'getAllOrders') {
+        var offset = parseInt(e.parameter.offset, 10) || 0;
+        var limit = parseInt(e.parameter.limit, 10) || 10;
+        var statusFilter = e.parameter.statusFilter || 'all';
+        responseData = getAllOrders(offset, limit, statusFilter);
+      } else if (action === 'getOrdersByRange') {
+        var dateFrom = e.parameter.dateFrom || '';
+        var dateTo = e.parameter.dateTo || '';
+        var offset = parseInt(e.parameter.offset, 10) || 0;
+        var limit = parseInt(e.parameter.limit, 10) || 10;
+        var statusFilter = e.parameter.statusFilter || 'all';
+        responseData = getOrdersByRange(dateFrom, dateTo, offset, limit, statusFilter);
+      } else if (action === 'submitOrder') {
+        var data = JSON.parse(e.parameter.data || '{}');
+        responseData = submitOrder(data);
+      } else if (action === 'updateOrderMeta') {
+        responseData = updateOrderMeta(e.parameter.orderId, e.parameter.status, e.parameter.paymentMethod);
+      } else if (action === 'deleteOrder') {
+        responseData = deleteOrder(e.parameter.orderId);
+      } else {
+        responseData = { success: false, message: 'Invalid GET action: ' + action };
+      }
+
+      var outputText = typeof responseData === 'string' ? JSON.stringify(responseData) : JSON.stringify(responseData);
+      if (callback) {
+        return ContentService.createTextOutput(callback + '(' + outputText + ')')
+          .setMimeType(ContentService.MimeType.JAVASCRIPT);
+      } else {
+        return ContentService.createTextOutput(outputText)
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    } catch (err) {
+      var errOutput = JSON.stringify({ success: false, message: err.toString() });
+      if (callback) {
+        return ContentService.createTextOutput(callback + '(' + errOutput + ')')
+          .setMimeType(ContentService.MimeType.JAVASCRIPT);
+      } else {
+        return ContentService.createTextOutput(errOutput)
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+  }
+
+  // Otherwise, fallback to rendering the spreadsheet integrated HTML UI
+  return HtmlService.createHtmlOutputFromFile('index')
+    .setTitle('☕ Kopi Nusantara POS')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, user-scalable=no');
+}
+
+function doPost(e) {
+  try {
+    var rawData = e.postData.contents;
+    var payload = JSON.parse(rawData);
+    var action = payload.action;
+    var data = payload.data || {};
+    var responseData;
+
+    if (action === 'submitOrder') {
+      responseData = submitOrder(data);
+    } else if (action === 'updateOrderMeta') {
+      responseData = updateOrderMeta(data.orderId, data.status, data.paymentMethod);
+    } else if (action === 'deleteOrder') {
+      responseData = deleteOrder(data.orderId);
+    } else {
+      responseData = { success: false, message: 'Invalid POST action: ' + action };
+    }
+
+    return ContentService.createTextOutput(JSON.stringify(responseData))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function getTodayDate() {
+  var d = new Date();
+  var year = d.getFullYear();
+  var month = ('0' + (d.getMonth() + 1)).slice(-2);
+  var day = ('0' + d.getDate()).slice(-2);
+  return year + '-' + month + '-' + day;
+}
+
+function getOrCreateOrdersSheet() {
+  // ==========================================
+  // JIKA INGIN MENGGUNAKAN SPREADSHEET TERTENTU SECARA MANUAL:
+  // Masukkan ID atau URL lengkap spreadsheet Anda ke dalam variabel di bawah ini.
+  // Contoh: var MANUAL_SPREADSHEET_ID = "1aBcDeFg12345...";
+  // Kosongkan "" jika ingin membuat otomatis / menggunakan script properties.
+  var MANUAL_SPREADSHEET_ID = "";
+  // ==========================================
+
+  var ss;
+  if (MANUAL_SPREADSHEET_ID) {
+    try {
+      if (MANUAL_SPREADSHEET_ID.indexOf('http') === 0) {
+        ss = SpreadsheetApp.openByUrl(MANUAL_SPREADSHEET_ID);
+      } else {
+        ss = SpreadsheetApp.openById(MANUAL_SPREADSHEET_ID);
+      }
+    } catch (err) {
+      throw new Error("Gagal membuka spreadsheet manual. Pastikan ID/URL benar dan script memiliki akses. Detail: " + err.toString());
+    }
+  } else {
+    try {
+      ss = SpreadsheetApp.getActiveSpreadsheet();
+      if (!ss) throw new Error("No active spreadsheet bound to this script.");
+    } catch (e) {
+      var properties = PropertiesService.getScriptProperties();
+      var ssId = properties.getProperty('SPREADSHEET_ID');
+      if (ssId) {
+        try {
+          if (ssId.indexOf('http') === 0) {
+            ss = SpreadsheetApp.openByUrl(ssId);
+          } else {
+            ss = SpreadsheetApp.openById(ssId);
+          }
+        } catch (err) {
+          ss = SpreadsheetApp.create('Kopi Nusantara POS Database');
+          properties.setProperty('SPREADSHEET_ID', ss.getId());
+        }
+      } else {
+        ss = SpreadsheetApp.create('Kopi Nusantara POS Database');
+        properties.setProperty('SPREADSHEET_ID', ss.getId());
+      }
+    }
+  }
+  
+  var sheet = ss.getSheetByName('Orders');
+  if (!sheet) {
+    sheet = ss.insertSheet('Orders');
+    sheet.appendRow(['Order ID', 'Tanggal', 'Waktu', 'Items', 'Total Qty', 'Total', 'Payment Method', 'Status', 'Note']);
+    sheet.getRange(1, 1, 1, 9).setFontWeight('bold').setBackground('#a0784a').setFontColor('#ffffff');
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function getOrdersFromSheet(filterFromDate, filterToDate) {
+  var sheet = getOrCreateOrdersSheet();
+  var rows = sheet.getDataRange().getValues();
+  if (rows.length <= 1) return [];
+  
+  var dataRows = rows.slice(1);
+  var orders = [];
+  
+  for (var i = 0; i < dataRows.length; i++) {
+    var r = dataRows[i];
+    var orderId = String(r[0] || '');
+    var tanggal = String(r[1] || ''); 
+    var waktu = String(r[2] || '');
+    var items = String(r[3] || '');
+    var totalQty = Number(r[4] || 0);
+    var total = Number(r[5] || 0);
+    var paymentMethod = String(r[6] || '');
+    var status = String(r[7] || 'Belum Bayar');
+    var note = String(r[8] || '');
+    
+    if (tanggal && tanggal.indexOf('GMT') !== -1) {
+      var d = new Date(tanggal);
+      tanggal = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+    }
+    
+    if (filterFromDate && tanggal < filterFromDate) continue;
+    if (filterToDate && tanggal > filterToDate) continue;
+    
+    orders.push({ orderId: orderId, tanggal: tanggal, waktu: waktu, items: items, totalQty: totalQty, total: total, paymentMethod: paymentMethod, status: status, note: note });
+  }
+  
+  orders.reverse();
+  return orders;
+}
+
+function calculateBestSeller(orders) {
+  var qty = {};
+  orders.forEach(function(o) {
+    var itemsStr = o.items || '';
+    itemsStr.split(', ').forEach(function(p) {
+      var parts = p.split(' x');
+      if (parts.length === 2) {
+        var name = parts[0].trim();
+        var count = parseInt(parts[1], 10) || 0;
+        qty[name] = (qty[name] || 0) + count;
+      }
+    });
+  });
+  
+  var best = null;
+  var max = 0;
+  for (var k in qty) {
+    if (qty[k] > max) { max = qty[k]; best = k; }
+  }
+  return best ? { name: best, qty: max } : null;
+}
+
+function submitOrder(data) {
+  try {
+    var sheet = getOrCreateOrdersSheet();
+    var d = new Date();
+    var pad = function(n) { return String(n).padStart(2, '0'); };
+    var orderId = 'ORD-' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
+    var tanggal = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+    var waktu = pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+    
+    var itemStrings = [];
+    var totalQty = 0;
+    if (data.items && data.items.length) {
+      data.items.forEach(function(item) {
+        itemStrings.push(item.name + ' x' + item.qty);
+        totalQty += Number(item.qty);
+      });
+    }
+    var itemsFormatted = itemStrings.join(', ');
+    
+    sheet.appendRow([orderId, tanggal, waktu, itemsFormatted, totalQty, Number(data.total), data.pay, data.status, data.note]);
+    return { success: true, orderId: orderId };
+  } catch (err) {
+    return { success: false, message: err.toString() };
+  }
+}
+
+function getAllOrders(offset, limit, statusFilter) {
+  try {
+    var allOrders = getOrdersFromSheet(null, null);
+    return paginateAndSummarize(allOrders, offset, limit, statusFilter);
+  } catch (err) {
+    return { success: false, message: err.toString() };
+  }
+}
+
+function getOrdersByRange(dateFrom, dateTo, offset, limit, statusFilter) {
+  try {
+    var allOrders = getOrdersFromSheet(dateFrom, dateTo);
+    return paginateAndSummarize(allOrders, offset, limit, statusFilter);
+  } catch (err) {
+    return { success: false, message: err.toString() };
+  }
+}
+
+function paginateAndSummarize(allOrders, offset, limit, statusFilter) {
+  offset = parseInt(offset, 10) || 0;
+  limit = parseInt(limit, 10) || 10;
+  statusFilter = statusFilter || 'all';
+  
+  var totalRevenue = 0, totalCash = 0, totalQris = 0, totalCount = allOrders.length;
+  
+  allOrders.forEach(function(o) {
+    totalRevenue += Number(o.total || 0);
+    if (o.paymentMethod === 'QRIS') { totalQris += Number(o.total || 0); } else { totalCash += Number(o.total || 0); }
+  });
+  
+  var bestSeller = calculateBestSeller(allOrders);
+  
+  var filteredOrders = allOrders;
+  if (statusFilter !== 'all') {
+    filteredOrders = allOrders.filter(function(o) { return o.status === statusFilter; });
+  }
+  
+  var filteredCount = filteredOrders.length;
+  var paginatedOrders = filteredOrders.slice(offset, offset + limit);
+  var hasMore = (offset + limit) < filteredCount;
+  
+  return {
+    success: true, orders: paginatedOrders, offset: offset, limit: limit, hasMore: hasMore, filteredCount: filteredCount,
+    totalRevenue: totalRevenue, totalCash: totalCash, totalQris: totalQris, totalCount: totalCount, bestSeller: bestSeller
+  };
+}
+
+function updateOrderMeta(orderId, status, paymentMethod) {
+  try {
+    var sheet = getOrCreateOrdersSheet();
+    var rows = sheet.getDataRange().getValues();
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]).trim() === String(orderId).trim()) {
+        sheet.getRange(i + 1, 7).setValue(paymentMethod);
+        sheet.getRange(i + 1, 8).setValue(status);
+        SpreadsheetApp.flush();
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Order ID not found.' };
+  } catch (err) {
+    return { success: false, message: err.toString() };
+  }
+}
+
+function deleteOrder(orderId) {
+  try {
+    var sheet = getOrCreateOrdersSheet();
+    var rows = sheet.getDataRange().getValues();
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]).trim() === String(orderId).trim()) {
+        sheet.deleteRow(i + 1);
+        SpreadsheetApp.flush();
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Order ID not found.' };
+  } catch (err) {
+    return { success: false, message: err.toString() };
+  }
+}`;
+
+      document.getElementById('codeArea').textContent = script;
+    }
+
+    function copyCode() {
+      var text = document.getElementById('codeArea').textContent;
+      navigator.clipboard.writeText(text);
+      toast('Backend script code.gs berhasil disalin ke clipboard!', 'success');
+    }
+
+    function downloadCode() {
+      var text = document.getElementById('codeArea').textContent;
+      var el = document.createElement('a');
+      var fileHandler = new Blob([text], {type: 'text/plain'});
+      el.href = URL.createObjectURL(fileHandler);
+      el.download = "code.gs";
+      document.body.appendChild(el);
+      el.click();
+      document.body.removeChild(el);
+      toast('File backend code.gs berhasil diunduh!', 'success');
+    }
+  </script>
+</body>
+</html>
