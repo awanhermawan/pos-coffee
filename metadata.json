@@ -1,0 +1,6 @@
+{
+  "name": "Kopi Nusantara POS",
+  "description": "Point Of Sale (POS) Kopi Nusantara dengan integrasi Google Sheets dan backend Google Apps Script (code.gs) menggunakan sistem Lazy Loading (pagination) halaman riwayat.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

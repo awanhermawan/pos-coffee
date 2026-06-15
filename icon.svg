@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Balanced, eye-pleasing background frame conforming to the Coffee Accent theme -->
+  <rect width="512" height="512" rx="140" fill="#a0784a"/>
+  <!-- Minimalist, scalable aesthetic coffee cup design -->
+  <g transform="translate(64, 48)" fill="none" stroke="#fcfaf6" stroke-width="26" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Steam waves over the hot coffee cup -->
+    <path d="M160,110 C160,80 180,70 180,40" stroke-width="18" opacity="0.85"/>
+    <path d="M224,110 C224,80 244,70 244,40" stroke-width="18" opacity="0.85"/>
+    <path d="M288,110 C288,80 308,70 308,40" stroke-width="18" opacity="0.85"/>
+    
+    <!-- Big Cup body -->
+    <path d="M112,160 L272,160 C272,250 250,290 192,290 L192,290 C134,290 112,250 112,160 Z" fill="#876539"/>
+    
+    <!-- Solid base saucer line -->
+    <line x1="80" y1="336" x2="304" y2="336" stroke-width="28"/>
+    
+    <!-- Curved handle -->
+    <path d="M272,185 C310,185 330,200 330,225 C330,250 310,265 272,265" stroke-width="20"/>
+  </g>
+</svg>
